@@ -9,7 +9,8 @@ import OTP from "./Page/auth/OTP";
 import Logout from "./Page/auth/Logout";
 import ProcessForm from "./Page/auth/ProcessForm";
 import PunctureRequestForm from "./Page/PunctureRequestForm";
-import Profile from "./mechanic/page/profile";
+import ProfilePage from "./Page/ProfilePage";
+import Profile from "./mechanic/page/Profile";
 import Dashboard from "./mechanic/Dashboard";
 
 // Import the lock screen functionality
@@ -55,6 +56,7 @@ const AppContent = () => {
           <Route path="/Login" element={<Login />} />
           <Route path="/verify" element={<OTP />} />
           <Route path="/logout" element={<Logout />} />
+          <Route path="/profile" element={<ProfilePage />} />
           
           {/* Pages */}
           <Route path="/form" element={<ProcessForm />} />
