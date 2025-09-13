@@ -1,33 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { Routes, Route } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import api from './utils/api'; // Your axios instance
 import './App.css'
+import MainPage from "./Page/MainPage";
+import Login from "./Page/auth/Login";
+import OTP from "./Page/auth/OTP";
+import Logout from "./Page/auth/Logout";
+import ProcessForm from "./Page/auth/ProcessForm";
+import ProfilePage from "./Page/ProfilePage";
+import PunctureRequestForm from "./Page/PunctureRequestForm";
 
 function App() {
-  const [count, setCount] = useState(0)
 
+// const [user, setUser] = useState(null);
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     // This function will run when the app first loads
+//     const checkUserStatus = async () => {
+//       try {
+//         // Make a GET request to the /me endpoint
+//         const response = await api.get('/core/me/');
+        
+//         // If successful, save the user data in state
+//         setUser(response.data);
+//         console.log("User is logged in:", response.data);
+
+//       } catch (error) {
+//         // If it fails (e.g., 401 error), the user is not logged in
+//         setUser(null);
+//         console.log("User is not logged in.");
+//       } finally {
+//         // Stop the loading state
+//         setLoading(false);
+//       }
+//     };
+
+//     checkUserStatus();
+//   }, []); // The empty array [] means this effect runs only once
+
+//   if (loading) {
+//     return <div>Loading...</div>; // Show a loading indicator
+//   }
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="App transition-all duration-500 ease-in-out bg-black">
+        <Routes>
+          {/* Main Page */}
+          <Route path="/" element={<MainPage />} />
+          {/* Auth */}
+          <Route path="/Login" element={<Login />} />
+          <Route path="/verify" element={<OTP />} />
+
+          <Route path="/logout" element={<Logout />} />
+          {/* Pages  */}
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/form" element={<ProcessForm />} />
+          <Route path="/request" element={<PunctureRequestForm />} />
+
+          {/* Fallback Route for unmatched paths */}
+          {/* <Route path="*" element={<NotFound />} /> */}
+        </Routes>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }
