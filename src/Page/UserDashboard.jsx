@@ -226,11 +226,11 @@ const PanelContent = React.memo(({ selectedService, onServiceSelect, onBackToHom
   return (
     <div className="flex-grow overflow-y-auto px-4 pt-2 pb-8 space-y-6">
       {/* Enhanced Search Bar */}
-      
+
       {/* Service Categories Grid */}
       <div>
         <h1 className='text-white font-bold mt-10'>Book Mechanic</h1>
-        <div onClick={()=> {navigate('/request') } } className="mt-3 bg-green-300/30 border border-green-200/30 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all duration-300 group">
+        <div onClick={() => { navigate('/request') }} className="mt-3 bg-green-300/30 border border-green-200/30 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all duration-300 group">
           <h4 className="font-semibold text-green-500 text-center">Request Now</h4>
         </div>
       </div>
@@ -388,6 +388,10 @@ const MechanicAppUI = () => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://man-navlakha.netlify.app/">Man Navlakha</a> Developer of this Website'
+            />
             <MapController center={position} />
             {position && (
               <>
@@ -453,7 +457,7 @@ const MechanicAppUI = () => {
             <span className="text-sm text-gray-300">Online</span>
           </div>
           <span className="text-lg">Welcome, Man!</span>
-          <div onClick={() => {navigate('/profile')}} className="relative">
+          <div onClick={() => { navigate('/profile') }} className="relative">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
               <User className="w-5 h-5 text-white" />
             </div>
@@ -470,7 +474,7 @@ const MechanicAppUI = () => {
           selectedService={selectedService}
           onServiceSelect={handleServiceSelect}
           onBackToHome={handleBackToHome}
-          navigate={navigate} 
+          navigate={navigate}
         />
       </aside>
 
@@ -487,7 +491,7 @@ const MechanicAppUI = () => {
           selectedService={selectedService}
           onServiceSelect={handleServiceSelect}
           onBackToHome={handleBackToHome}
-          navigate={navigate} 
+          navigate={navigate}
         />
       </animated.div>
 
@@ -507,8 +511,8 @@ const MechanicAppUI = () => {
                 key={item.name}
                 onClick={() => setActiveNav(item.name)}
                 className={`relative flex flex-col items-center transition-all duration-200 cursor-pointer ${isActive
-                    ? 'text-blue-400 transform scale-110'
-                    : 'text-gray-500 hover:text-gray-300'
+                  ? 'text-blue-400 transform scale-110'
+                  : 'text-gray-500 hover:text-gray-300'
                   }`}
               >
                 <div className="relative">

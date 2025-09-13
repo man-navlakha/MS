@@ -51,7 +51,7 @@ const Dashboard = () => {
   return (
     <div className="relative h-screen w-screen flex flex-col overflow-hidden">
       <Navbar mechanicName="John Doe" />
-      
+
       <div className="relative flex-grow">
         {/* Map Background */}
         <MapContainer center={mechanicPosition} zoom={13} className="h-full w-full z-0">
@@ -59,7 +59,11 @@ const Dashboard = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://man-navlakha.netlify.app/">Man Navlakha</a> Developer of this Website'
+          />
+
           {/* Mechanic's Location Marker */}
           <Marker position={mechanicPosition} icon={mechanicIcon}>
             <Popup>Your current location.</Popup>
