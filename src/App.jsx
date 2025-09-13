@@ -1,69 +1,86 @@
-import { Routes, Route } from "react-router-dom";
-import React, { useEffect, useState } from 'react';
-import api from './utils/api'; // Your axios instance
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from "react-router-dom"; // 1. Import BrowserRouter here
 import './App.css'
+
+// Import your page and component files
 import MainPage from "./Page/MainPage";
 import Login from "./Page/auth/Login";
 import OTP from "./Page/auth/OTP";
 import Logout from "./Page/auth/Logout";
 import ProcessForm from "./Page/auth/ProcessForm";
-import ProfilePage from "./Page/ProfilePage";
 import PunctureRequestForm from "./Page/PunctureRequestForm";
+import Profile from "./mechanic/page/profile";
+import Dashboard from "./mechanic/Dashboard";
 
-function App() {
+// Import the lock screen functionality
+import { LockProvider, useLock } from './context/LockContext';
+import LockScreen from './mechanic/componets/LockScreen';
 
-// const [user, setUser] = useState(null);
-//   const [loading, setLoading] = useState(true);
+// This component now handles rendering the lock screen and all the routes
+const AppContent = () => {
+  const { isLocked, lockScreen } = useLock(); // 2. Get the lockScreen function
 
-//   useEffect(() => {
-//     // This function will run when the app first loads
-//     const checkUserStatus = async () => {
-//       try {
-//         // Make a GET request to the /me endpoint
-//         const response = await api.get('/core/me/');
-        
-//         // If successful, save the user data in state
-//         setUser(response.data);
-//         console.log("User is logged in:", response.data);
+  // 3. Add the useEffect hook for the keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Shortcut: Ctrl + Shift + L
+      if (event.ctrlKey && event.shiftKey && event.key === 'L') {
+        event.preventDefault(); // Prevent any default browser action
+        lockScreen();
+      }
+    };
 
-//       } catch (error) {
-//         // If it fails (e.g., 401 error), the user is not logged in
-//         setUser(null);
-//         console.log("User is not logged in.");
-//       } finally {
-//         // Stop the loading state
-//         setLoading(false);
-//       }
-//     };
+    // Add the event listener when the component mounts
+    window.addEventListener('keydown', handleKeyDown);
 
-//     checkUserStatus();
-//   }, []); // The empty array [] means this effect runs only once
+    // Remove the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [lockScreen]); // Dependency array ensures the effect uses the latest lockScreen function
 
-//   if (loading) {
-//     return <div>Loading...</div>; // Show a loading indicator
-//   }
+
   return (
     <>
+      {/* The LockScreen will appear on top of any page when isLocked is true */}
+      {isLocked && <LockScreen />}
+      
       <div className="App transition-all duration-500 ease-in-out bg-black">
+        {/* 2. A SINGLE <Routes> component holds all your app's routes */}
         <Routes>
           {/* Main Page */}
           <Route path="/" element={<MainPage />} />
+          
           {/* Auth */}
           <Route path="/Login" element={<Login />} />
           <Route path="/verify" element={<OTP />} />
-
           <Route path="/logout" element={<Logout />} />
-          {/* Pages  */}
-          <Route path="/profile" element={<ProfilePage />} />
+          
+          {/* Pages */}
           <Route path="/form" element={<ProcessForm />} />
           <Route path="/request" element={<PunctureRequestForm />} />
 
-          {/* Fallback Route for unmatched paths */}
+          {/* Mechanic */}
+          <Route path="/Dashboard" element={<Dashboard />} />
+          <Route path="/profilepage" element={<Profile />} />
+
+          {/* You can add a "Not Found" route as a fallback */}
           {/* <Route path="*" element={<NotFound />} /> */}
         </Routes>
       </div>
     </>
-  )
+  );
+};
+
+// The main App component is now responsible for setting up the providers and router
+function App() {
+
+  return (
+    // 3. The Providers and Router wrap the AppContent
+    <LockProvider>
+        <AppContent />
+    </LockProvider>
+  );
 }
 
-export default App
+export default App;
