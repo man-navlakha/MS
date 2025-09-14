@@ -44,7 +44,7 @@ const AppContent = () => {
   return (
     <>
     <div className='bg-red-500 text-white font-bold p-2 text-center'>
-      Please Fill the details first → <a href="/form">Click Here &rarr;  1</a>
+      Please Fill the details first → <a href="/form">Click Here &rarr; </a>
     </div>
       {/* The LockScreen will appear on top of any page when isLocked is true */}
       {isLocked && <LockScreen />}
