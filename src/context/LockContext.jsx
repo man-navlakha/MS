@@ -22,7 +22,6 @@ export const LockProvider = ({ children }) => {
     </LockContext.Provider>
   );
 };
-
 // Create a custom hook for easy access to the context
 export const useLock = () => {
   return useContext(LockContext);

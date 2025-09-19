@@ -29,7 +29,6 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
-
   // ✅ NEW: Google login handler based on your example
   const handleGoogleLogin = async (credentialResponse) => {
     setError('');
