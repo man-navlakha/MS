@@ -277,8 +277,12 @@ const PanelContent = React.memo(({ selectedService, onServiceSelect, onBackToHom
 
 
       <div className='mb-10'>
+        <a href="/login">Login</a>
+        <a href="/logout">Logout</a>
         <h5 className='text-white/10 '>This Created for development purpose</h5>
       </div>
+
+      
     </div>
   );
 });
@@ -469,7 +473,7 @@ const MechanicAppUI = () => {
       </nav>
 
       {/* Enhanced Desktop Left Panel */}
-      <aside className="hidden md:flex fixed top-20 left-0 bottom-0 z-20 w-96 bg-slate-900/95 backdrop-blur-lg border-r border-white/10 flex-col">
+      <aside className="hidden md:flex   h-full min-h-64 fixed top-20 left-0 bottom-0 z-20 w-96 bg-slate-900/95 backdrop-blur-lg border-r border-white/10 flex-col">
         <PanelContent
           selectedService={selectedService}
           onServiceSelect={handleServiceSelect}
@@ -481,7 +485,13 @@ const MechanicAppUI = () => {
       {/* Enhanced Mobile Bottom Sheet */}
       <animated.div
         {...bind()}
-        style={{ y, height: sheetHeight, bottom: -sheetHeight, touchAction: 'none' }}
+        style={{
+  y,
+  height: sheetHeight,
+  bottom: Math.max(-sheetHeight, -700),
+  touchAction: 'none'
+}}
+
         className="md:hidden fixed left-0 right-0 z-20 rounded-t-3xl shadow-2xl bg-slate-900/95 backdrop-blur-lg border-t border-white/20 text-white flex flex-col"
       >
         <div className="p-4 cursor-grab active:cursor-grabbing">

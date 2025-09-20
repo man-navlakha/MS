@@ -13,9 +13,15 @@ import ProfilePage from "./Page/ProfilePage";
 import Profile from "./mechanic/page/Profile";
 import Dashboard from "./mechanic/Dashboard";
 
+
+
+import Protected from './ProtectedRoute'
+
 // Import the lock screen functionality
 import { LockProvider, useLock } from './context/LockContext';
 import LockScreen from './mechanic/componets/LockScreen';
+
+
 
 // This component now handles rendering the lock screen and all the routes
 const AppContent = () => {
@@ -43,31 +49,61 @@ const AppContent = () => {
 
   return (
     <>
-    <div className='bg-red-500 text-white font-bold p-2 text-center'>
-      Please Fill the details first → <a href="/form">Click Here &rarr; </a>
-    </div>
+      <div className='bg-red-500 text-white font-bold p-2 text-center'>
+        Please Fill the details first → <a href="/form">Click Here &rarr; </a>
+      </div>
       {/* The LockScreen will appear on top of any page when isLocked is true */}
       {isLocked && <LockScreen />}
-      
+
       <div className="App transition-all duration-500 ease-in-out bg-black">
         {/* 2. A SINGLE <Routes> component holds all your app's routes */}
         <Routes>
           {/* Main Page */}
-          <Route path="/" element={<MainPage />} />
-          
+          <Route path="/" element={
+            <Protected>
+              <MainPage />
+            </Protected>
+          } />
           {/* Auth */}
-          <Route path="/Login" element={<Login />} />
-          <Route path="/verify" element={<OTP />} />
-          <Route path="/logout" element={<Logout />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          
+          <Route path="/Login" element={
+            <Login />
+          } />
+          <Route path="/verify" element={
+            <OTP />
+          } />
+          <Route path="/logout" element={
+            <Logout />
+          } />
+
+          <Route path="/profile" element={
+            <Protected>
+              <ProfilePage />
+            </Protected>
+          } />
+
           {/* Pages */}
-          <Route path="/form" element={<ProcessForm />} />
-          <Route path="/request" element={<PunctureRequestForm />} />
+          <Route path="/form" element={
+            <Protected>
+              <ProcessForm />
+            </Protected>
+          } />
+          <Route path="/request" element={
+            <Protected>
+              <PunctureRequestForm />
+            </Protected>
+          } />
 
           {/* Mechanic */}
-          <Route path="/Dashboard" element={<Dashboard />} />
-          <Route path="/profilepage" element={<Profile />} />
+          <Route path="/Dashboard" element={
+            <Protected>
+              <Dashboard />
+            </Protected>
+          } />
+          <Route path="/profilepage" element={
+            <Protected>
+              <Profile />
+            </Protected>
+          } />
 
           {/* You can add a "Not Found" route as a fallback */}
           {/* <Route path="*" element={<NotFound />} /> */}
@@ -83,7 +119,7 @@ function App() {
   return (
     // 3. The Providers and Router wrap the AppContent
     <LockProvider>
-        <AppContent />
+      <AppContent />
     </LockProvider>
   );
 }

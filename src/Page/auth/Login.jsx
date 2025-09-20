@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google'; // ✅ Import GoogleLogin
 import api from '../../utils/api'; 
@@ -9,6 +9,24 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   // Optional: Add loading and success states for better user feedback
   const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+    const checkLogin = async () => {
+      try {
+        // Only check login if not on login page
+        if (!window.location.pathname.includes("/login")) return;
+
+        const res = await api.get("core/me/"); // proxy-ready
+        if (res.data.username) {
+          window.location.href = '/';
+        }
+      } catch (err) {
+        console.log("Not logged in");
+      }
+    };
+    checkLogin();
+  }, []);
+
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
