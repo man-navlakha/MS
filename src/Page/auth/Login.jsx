@@ -20,8 +20,8 @@ const LoginPage = () => {
       return;
     }
     try {
-      await api.post('/users/Login_SignUp/', { email: email });
-      navigate("/verify", { state: { email: email } });
+      const res = await api.post('/users/Login_SignUp/', { email: email });
+      navigate("/verify", { state: { key: res.data.key,id: res.data.id,status: res.data.status } });
     } catch (err) {
       console.error("Login failed:", err);
       setError('Login failed. Please check your email or try again.');
@@ -45,8 +45,11 @@ const LoginPage = () => {
       // Assuming a successful login from the backend, navigate the user
       // You might want to store tokens from the response (res.data) before navigating
       console.log("Backend response:", res.data);
-      navigate("/dashboard"); // Redirect to a dashboard or home page after login
-
+      if (res.data.status === 'New User') {
+        navigate('/form', { state: { status: "Google" } }); // Redirect to a form page after login
+      } else {
+        navigate('/'); 
+      }
     } catch (err) {
       console.error("Google login error:", err);
       setError(err?.response?.data?.detail || "Google login failed on our server.");
