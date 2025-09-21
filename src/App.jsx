@@ -55,7 +55,7 @@ const AppContent = () => {
       {/* The LockScreen will appear on top of any page when isLocked is true */}
       {isLocked && <LockScreen />}
 
-      <div className="App transition-all duration-500 ease-in-out bg-black">
+      <div className="App transition-all duration-500 ease-in-out bg-white">
         {/* 2. A SINGLE <Routes> component holds all your app's routes */}
         <Routes>
           {/* Main Page */}

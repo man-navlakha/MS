@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "./utils/api";
+import './pp.css'
 
 const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -20,13 +21,59 @@ const ProtectedRoute = ({ children }) => {
   }, [location.pathname]);
 
   if (isAuthenticated === null) {
-    return <div>Loading...</div>;
+    return <div className="h-screen flex justify-center items-center">
+<div className="main ">
+  <div className="up">
+    <div className="loaders">
+      <div className="loader"></div>
+      <div className="loader"></div>
+      <div className="loader"></div>
+      <div className="loader"></div>
+      <div className="loader"></div>
+      <div className="loader"></div>
+      <div className="loader"></div>
+      <div className="loader"></div>
+      <div className="loader"></div>
+      <div className="loader"></div>
+    </div>
+    <div className="loadersB">
+      <div className="loaderA">
+        <div className="ball0"></div>
+      </div>
+      <div className="loaderA">
+        <div className="ball1"></div>
+      </div>
+      <div className="loaderA">
+        <div className="ball2"></div>
+      </div>
+      <div className="loaderA">
+        <div className="ball3"></div>
+      </div>
+      <div className="loaderA">
+        <div className="ball4"></div>
+      </div>
+      <div className="loaderA">
+        <div className="ball5"></div>
+      </div>
+      <div className="loaderA">
+        <div className="ball6"></div>
+      </div>
+      <div className="loaderA">
+        <div className="ball7"></div>
+      </div>
+      <div className="loaderA">
+        <div className="ball8"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>;
   }
 
   if (!isAuthenticated) {
     return (
       <Navigate
-        to={`/auth/login?redirect=${encodeURIComponent(
+        to={`/login?redirect=${encodeURIComponent(
           location.pathname + location.search
         )}`}
         replace

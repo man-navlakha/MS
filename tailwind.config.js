@@ -23,3 +23,24 @@ module.exports = {
   },
   plugins: [],
 };
+
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        neumorph: {
+          light: '#E6E9EF',
+          dark: '#D1D9E6',
+          shadow: '#BABECC',
+          highlight: '#FFFFFF'
+        }
+      },
+      boxShadow: {
+        'neumorph-inset': 'inset 2px 2px 5px #BABECC, inset -5px -5px 10px #FFFFFF',
+        'neumorph-outset': '3px 3px 6px #BABECC, -3px -3px 6px #FFFFFF',
+        'neumorph-pressed': 'inset 1px 1px 2px #BABECC, inset -1px -1px 2px #FFFFFF'
+      }
+    }
+  }
+}

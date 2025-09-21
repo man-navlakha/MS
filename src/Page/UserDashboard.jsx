@@ -44,13 +44,13 @@ L.Icon.Default.mergeOptions({
 const createCustomIcon = () => {
   return L.divIcon({
     className: 'custom-marker',
-    html: `<div class="animated-pulse"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#3b82f6" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>`,
+    html: `<div className="animated-pulse"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#3b82f6" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>`,
     iconSize: [32, 32],
     iconAnchor: [16, 32],
   });
 };
 
-// Enhanced Mock Data
+// Enhanced Mock Data with more realistic data
 const mockNearbyMechanics = [
   {
     id: 1,
@@ -62,7 +62,23 @@ const mockNearbyMechanics = [
     services: ['Engine', 'Brakes', 'AC'],
     available: true,
     responseTime: '15 min',
-    position: [23.0425, 72.5714]
+    position: [23.0425, 72.5714],
+    phone: '+91 98765 43210',
+    description: 'Expert in all types of car repairs with 15+ years of experience'
+  },
+  {
+    id: 2,
+    name: 'Royal Garage',
+    address: 'Prahlad Nagar, Ahmedabad',
+    rating: 4.9,
+    distance: '1.2 km',
+    price: '₹349',
+    services: ['Oil Change', 'Tire Service', 'Battery'],
+    available: true,
+    responseTime: '10 min',
+    position: [23.0325, 72.5514],
+    phone: '+91 98765 43211',
+    description: 'Premium service with genuine parts and warranty'
   },
   {
     id: 3,
@@ -74,7 +90,9 @@ const mockNearbyMechanics = [
     services: ['Emergency', 'Towing'],
     available: false,
     responseTime: '30 min',
-    position: [23.0225, 72.5614]
+    position: [23.0225, 72.5614],
+    phone: '+91 98765 43212',
+    description: '24/7 emergency roadside assistance available'
   }
 ];
 
@@ -88,83 +106,98 @@ const serviceCategories = [
   { id: 2, label: 'Bike Service', icon: Bike, color: 'bg-green-500', count: '89+ mechanics' },
 ];
 
-// Enhanced Service Card Component
-const ServiceCard = React.memo(({ service, onSelect }) => (
-  <div
-    onClick={() => onSelect(service)}
-    className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all duration-300 transform hover:scale-[1.02]"
-  >
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex items-center space-x-3">
-        <div className={`p-2 rounded-xl ${service.available ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-          <Wrench size={20} />
-        </div>
-        <div>
-          <h3 className="font-bold text-white text-lg">{service.name}</h3>
-          <p className="text-gray-400 text-sm">{service.address}</p>
-        </div>
-      </div>
-      <div className="text-right">
-        <div className="flex items-center space-x-1 mb-1">
-          <Star className="w-4 h-4 text-yellow-400 fill-current" />
-          <span className="text-white font-semibold">{service.rating}</span>
-        </div>
-        <p className="text-gray-400 text-xs">{service.distance}</p>
-      </div>
-    </div>
+// Enhanced Service Card Component with better performance
+const ServiceCard = React.memo(({ service, onSelect }) => {
+  const handleClick = useCallback(() => {
+    onSelect(service);
+  }, [service, onSelect]);
 
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex flex-wrap gap-1">
-        {service.services.map((s, idx) => (
-          <span key={idx} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-lg">
-            {s}
-          </span>
-        ))}
+  return (
+    <div
+      onClick={handleClick}
+      className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all duration-300 transform hover:scale-[1.02]"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center space-x-3">
+          <div className={`p-2 rounded-xl ${service.available ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+            <Wrench size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-white text-lg">{service.name}</h3>
+            <p className="text-gray-400 text-sm">{service.address}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="flex items-center space-x-1 mb-1">
+            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+            <span className="text-white font-semibold">{service.rating}</span>
+          </div>
+          <p className="text-gray-400 text-xs">{service.distance}</p>
+        </div>
       </div>
-      <div className="text-right">
-        <p className="text-white font-bold text-lg">{service.price}</p>
-        <p className="text-gray-400 text-xs">starting from</p>
-      </div>
-    </div>
 
-    <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-2 text-sm">
-        <Clock className="w-4 h-4 text-gray-400" />
-        <span className="text-gray-300">{service.responseTime}</span>
-        {service.available ? (
-          <span className="text-green-400 font-semibold">Available</span>
-        ) : (
-          <span className="text-red-400 font-semibold">Busy</span>
-        )}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap gap-1">
+          {service.services.map((s, idx) => (
+            <span key={idx} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-lg">
+              {s}
+            </span>
+          ))}
+        </div>
+        <div className="text-right">
+          <p className="text-white font-bold text-lg">{service.price}</p>
+          <p className="text-gray-400 text-xs">starting from</p>
+        </div>
       </div>
-      <div className="flex space-x-2">
-        <button className="p-2 bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition-colors">
-          <Phone className="w-4 h-4 text-blue-400" />
-        </button>
-        <button className="p-2 bg-green-500/20 rounded-lg hover:bg-green-500/30 transition-colors">
-          <MessageCircle className="w-4 h-4 text-green-400" />
-        </button>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2 text-sm">
+          <Clock className="w-4 h-4 text-gray-400" />
+          <span className="text-gray-300">{service.responseTime}</span>
+          {service.available ? (
+            <span className="text-green-400 font-semibold">Available</span>
+          ) : (
+            <span className="text-red-400 font-semibold">Busy</span>
+          )}
+        </div>
+        <div className="flex space-x-2">
+          <button className="p-2 bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition-colors">
+            <Phone className="w-4 h-4 text-blue-400" />
+          </button>
+          <button className="p-2 bg-green-500/20 rounded-lg hover:bg-green-500/30 transition-colors">
+            <MessageCircle className="w-4 h-4 text-green-400" />
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-));
+  );
+});
 
 // Map controller component to handle view changes
-const MapController = ({ center }) => {
+const MapController = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
     if (center) {
-      map.setView(center, map.getZoom());
+      map.setView(center, zoom || map.getZoom());
     }
-  }, [center, map]);
+  }, [center, zoom, map]);
   return null;
 };
 
-// Enhanced Panel Content
+// Enhanced Panel Content with better state management
 const PanelContent = React.memo(({ selectedService, onServiceSelect, onBackToHome }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const navigate = useNavigate();
+
+  const filteredMechanics = useMemo(() => {
+    return mockNearbyMechanics.filter(mechanic => 
+      mechanic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      mechanic.services.some(service => 
+        service.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [searchQuery]);
 
   if (selectedService) {
     return (
@@ -196,12 +229,22 @@ const PanelContent = React.memo(({ selectedService, onServiceSelect, onBackToHom
             </button>
           </div>
 
+          <div className="mb-4">
+            <p className="text-gray-300 text-sm">{selectedService.description}</p>
+          </div>
+
           <div className="flex space-x-3 mb-4">
-            <button className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-xl font-semibold transition-colors flex items-center justify-center space-x-2">
+            <a 
+              href={`tel:${selectedService.phone}`}
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-xl font-semibold transition-colors flex items-center justify-center space-x-2"
+            >
               <Phone className="w-4 h-4" />
               <span>Call Now</span>
-            </button>
-            <button className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-xl font-semibold transition-colors flex items-center justify-center space-x-2">
+            </a>
+            <button 
+              onClick={() => navigate('/request', { state: { mechanic: selectedService } })}
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-xl font-semibold transition-colors flex items-center justify-center space-x-2"
+            >
               <Navigation className="w-4 h-4" />
               <span>Book Service</span>
             </button>
@@ -226,10 +269,28 @@ const PanelContent = React.memo(({ selectedService, onServiceSelect, onBackToHom
   return (
     <div className="flex-grow overflow-y-auto px-4 pt-2 pb-8 space-y-6">
       {/* Enhanced Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <input
+          type="text"
+          placeholder="Search for services or mechanics..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
 
       {/* Service Categories Grid */}
       <div>
-        <h1 className='text-white font-bold mt-10'>Book Mechanic</h1>
+        <h1 className='text-white font-bold mt-4'>Book Mechanic</h1>
         <div onClick={() => { navigate('/request') }} className="mt-3 bg-green-300/30 border border-green-200/30 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all duration-300 group">
           <h4 className="font-semibold text-green-500 text-center">Request Now</h4>
         </div>
@@ -239,10 +300,10 @@ const PanelContent = React.memo(({ selectedService, onServiceSelect, onBackToHom
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">Nearby Mechanics</h3>
-          <span className="text-sm text-blue-400">{mockNearbyMechanics.length} found</span>
+          <span className="text-sm text-blue-400">{filteredMechanics.length} found</span>
         </div>
         <div className="space-y-3">
-          {mockNearbyMechanics.map((mechanic) => (
+          {filteredMechanics.map((mechanic) => (
             <ServiceCard
               key={mechanic.id}
               service={mechanic}
@@ -275,14 +336,13 @@ const PanelContent = React.memo(({ selectedService, onServiceSelect, onBackToHom
         </div>
       </div>
 
-
       <div className='mb-10'>
-        <a href="/login">Login</a>
-        <a href="/logout">Logout</a>
-        <h5 className='text-white/10 '>This Created for development purpose</h5>
+        <div className="flex space-x-4 mb-2">
+          <a href="/login" className="text-blue-400 hover:text-blue-300">Login</a>
+          <a href="/logout" className="text-blue-400 hover:text-blue-300">Logout</a>
+        </div>
+        <h5 className='text-white/10 text-xs'>This Created for development purpose</h5>
       </div>
-
-      
     </div>
   );
 });
@@ -295,19 +355,9 @@ const MechanicAppUI = () => {
   const mapRef = useRef();
   const [selectedMechanic, setSelectedMechanic] = useState(null);
   const [currentView, setCurrentView] = useState('home');
-  // 'home' | 'serviceForm' | 'profile'
-  const [selectedServiceType, setSelectedServiceType] = useState(null);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    window.handleMechanicClick = (id) => {
-      const mechanic = mockNearbyMechanics.find(m => m.id === id);
-      setSelectedMechanic(mechanic);
-    };
-  }, []);
-
-
-  // Enhanced bottom sheet logic
+  // Enhanced bottom sheet logic with better calculations
   const sheetHeight = useMemo(() => window.innerHeight * 0.9, []);
   const snapPoints = useMemo(() => [0, -sheetHeight * 0.4, -sheetHeight * 0.85], [sheetHeight]);
 
@@ -342,28 +392,77 @@ const MechanicAppUI = () => {
 
   const handleServiceSelect = useCallback((service) => {
     setSelectedService(service);
+    setSelectedMechanic(service);
     open(2); // Open to full height when selecting a service
   }, [open]);
 
   const handleBackToHome = useCallback(() => {
     setSelectedService(null);
+    setSelectedMechanic(null);
     open(1); // Return to half height when going back
   }, [open]);
 
+  // Enhanced geolocation with error handling and fallback
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setPosition([latitude, longitude]);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Error getting location:", err);
-        setPosition([23.0225, 72.5714]);
-        setLoading(false);
+    let isMounted = true;
+    
+    const getLocation = () => {
+      if (!navigator.geolocation) {
+        if (isMounted) {
+          setPosition([23.0225, 72.5714]); // Default to Ahmedabad
+          setLoading(false);
+        }
+        return;
       }
-    );
+
+      const success = (pos) => {
+        if (isMounted) {
+          const { latitude, longitude } = pos.coords;
+          setPosition([latitude, longitude]);
+          setLoading(false);
+        }
+      };
+
+      const error = (err) => {
+        console.error("Error getting location:", err);
+        if (isMounted) {
+          setPosition([23.0225, 72.5714]); // Default to Ahmedabad
+          setLoading(false);
+        }
+      };
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      };
+
+      navigator.geolocation.getCurrentPosition(success, error, options);
+    };
+
+    getLocation();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // Set up mechanic click handler
+  useEffect(() => {
+    const handleMechanicClick = (id) => {
+      const mechanic = mockNearbyMechanics.find(m => m.id === id);
+      if (mechanic) {
+        setSelectedMechanic(mechanic);
+        handleServiceSelect(mechanic);
+      }
+    };
+    
+    window.handleMechanicClick = handleMechanicClick;
+    
+    return () => {
+      window.handleMechanicClick = null;
+    };
+  }, [handleServiceSelect]);
 
   if (loading) {
     return (
@@ -409,16 +508,18 @@ const MechanicAppUI = () => {
                   <Marker
                     key={mechanic.id}
                     position={mechanic.position}
+                    eventHandlers={{
+                      click: () => handleServiceSelect(mechanic),
+                    }}
                     icon={L.divIcon({
                       className: 'mechanic-marker',
                       html: `
-      <div onclick="handleMechanicClick(${mechanic.id})"
-           class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h4l3 10h8l3-10h4" />
-        </svg>
-      </div>
-    `,
+                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h4l3 10h8l3-10h4" />
+                          </svg>
+                        </div>
+                      `,
                       iconSize: [32, 32],
                       iconAnchor: [16, 16],
                     })}
@@ -437,7 +538,6 @@ const MechanicAppUI = () => {
                       </Popup>
                     )}
                   </Marker>
-
                 ))}
               </>
             )}
@@ -446,10 +546,10 @@ const MechanicAppUI = () => {
       </div>
 
       {/* Enhanced Desktop Top Navbar */}
-      <nav className=" md:flex absolute top-0 left-0 right-0  z-30 bg-slate-900/90 backdrop-blur-lg border-b border-white/10 h-20 items-center justify-between px-6">
-        <div className="flex items-center ">
-          <div className=" rounded-xl">
-            <img src="/ms.png" className='w-17 h-17' alt="" />
+      <nav className="md:flex absolute top-0 left-0 right-0 z-30 bg-slate-900/90 backdrop-blur-lg border-b border-white/10 h-20 items-center justify-between px-6">
+        <div className="flex items-center">
+          <div className="rounded-xl">
+            <img src="/ms.png" className='w-17 h-17' alt="Mechanic Setu Logo" />
           </div>
           <h1 className="text-xl font-bold bg-clip-text text-white tracking-wider">
             MECHANIC SETU
@@ -461,24 +561,20 @@ const MechanicAppUI = () => {
             <span className="text-sm text-gray-300">Online</span>
           </div>
           <span className="text-lg">Welcome, Man!</span>
-          <div onClick={() => { navigate('/profile') }} className="relative">
+          <div onClick={() => { navigate('/profile') }} className="relative cursor-pointer">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
               <User className="w-5 h-5 text-white" />
             </div>
-            {/* <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-xs text-white font-bold">3</span>
-            </div> */}
           </div>
         </div>
       </nav>
 
       {/* Enhanced Desktop Left Panel */}
-      <aside className="hidden md:flex   h-full min-h-64 fixed top-20 left-0 bottom-0 z-20 w-96 bg-slate-900/95 backdrop-blur-lg border-r border-white/10 flex-col">
+      <aside className="hidden md:flex h-full min-h-64 fixed top-20 left-0 bottom-0 z-20 w-96 bg-slate-900/95 backdrop-blur-lg border-r border-white/10 flex-col">
         <PanelContent
           selectedService={selectedService}
           onServiceSelect={handleServiceSelect}
           onBackToHome={handleBackToHome}
-          navigate={navigate}
         />
       </aside>
 
@@ -486,12 +582,11 @@ const MechanicAppUI = () => {
       <animated.div
         {...bind()}
         style={{
-  y,
-  height: sheetHeight,
-  bottom: Math.max(-sheetHeight, -700),
-  touchAction: 'none'
-}}
-
+          y,
+          height: sheetHeight,
+          bottom: Math.max(-sheetHeight, -700),
+          touchAction: 'none'
+        }}
         className="md:hidden fixed left-0 right-0 z-20 rounded-t-3xl shadow-2xl bg-slate-900/95 backdrop-blur-lg border-t border-white/20 text-white flex flex-col"
       >
         <div className="p-4 cursor-grab active:cursor-grabbing">
@@ -501,7 +596,6 @@ const MechanicAppUI = () => {
           selectedService={selectedService}
           onServiceSelect={handleServiceSelect}
           onBackToHome={handleBackToHome}
-          navigate={navigate}
         />
       </animated.div>
 
@@ -509,17 +603,17 @@ const MechanicAppUI = () => {
       <footer className="md:hidden absolute bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-lg border-t border-white/10 px-6 py-4 pb-safe">
         <div className="flex justify-around">
           {[
-            { name: 'Home', icon: MapPin, badge: null },
-            { name: 'Request', icon: Wrench, badge: 2 },
-            { name: 'Activity', icon: History, badge: null },
-            { name: 'Account', icon: User, badge: null },
+            { name: 'Home', icon: MapPin, badge: null, action: () => setActiveNav('Home') },
+            { name: 'Request', icon: Wrench, badge: 2, action: () => navigate('/request') },
+            { name: 'Activity', icon: History, badge: null, action: () => navigate('/activity') },
+            { name: 'Account', icon: User, badge: null, action: () => navigate('/profile') },
           ].map(item => {
             const IconComponent = item.icon;
             const isActive = activeNav === item.name;
             return (
               <div
                 key={item.name}
-                onClick={() => setActiveNav(item.name)}
+                onClick={item.action}
                 className={`relative flex flex-col items-center transition-all duration-200 cursor-pointer ${isActive
                   ? 'text-blue-400 transform scale-110'
                   : 'text-gray-500 hover:text-gray-300'

@@ -11,7 +11,6 @@ const ProcessForm = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    email: "",
     phone: "",
   });
   const [errors, setErrors] = useState({});
@@ -43,11 +42,6 @@ const ProcessForm = () => {
       if (!formData.firstName) newErrors.firstName = "First name is required";
       if (!formData.lastName) newErrors.lastName = "Last name is required";
     } else if (step === 2) {
-      if (!formData.email) {
-        newErrors.email = "Email is required";
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = "Email address is invalid";
-      }
       if (!formData.phone) newErrors.phone = "Phone number is required";
     }
 
@@ -165,18 +159,6 @@ const ProcessForm = () => {
               Contact Details
             </h2>
             <div>
-              <label className="text-gray-300">Email Address</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={handleChange("email")}
-                className="w-full mt-1 px-4 py-3 bg-white/20 rounded-lg border border-transparent focus:border-white/50 focus:ring-0 text-white placeholder-gray-300 focus:outline-none transition"
-              />
-              {errors.email && (
-                <p className="text-red-400 text-sm mt-1">{errors.email}</p>
-              )}
-            </div>
-            <div>
               <label className="text-gray-300">Phone Number</label>
               <input
                 type="tel"
@@ -202,12 +184,6 @@ const ProcessForm = () => {
                 <span className="ml-2">
                   {formData.firstName} {formData.lastName}
                 </span>
-              </p>
-              <hr className="border-white/20" />
-              <p className="flex items-center">
-                <FaEnvelope className="mr-3 text-blue-300" />{" "}
-                <strong>Email:</strong>
-                <span className="ml-2">{formData.email}</span>
               </p>
               <hr className="border-white/20" />
               <p className="flex items-center">
