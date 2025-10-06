@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
@@ -8,11 +8,11 @@ const GOOGLE_CLIENT_ID = "628591285290-agf9c8nrjbcfa9onq3tr7d6dubjjo0g9.apps.goo
 
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+
+  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <BrowserRouter>
-    <App />
+      <App />
     </BrowserRouter>
-    </GoogleOAuthProvider>
-  </StrictMode>,
+  </GoogleOAuthProvider>
+
 )
