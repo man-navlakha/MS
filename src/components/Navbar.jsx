@@ -1,75 +1,82 @@
 // File: src/components/Navbar.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Menu, X, User, LogIn, UserPlus, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
-  const isAuthenticated = !!localStorage.getItem("token");
+
+  useEffect(() => {
+    // Check for authentication token in localStorage
+    const token = localStorage.getItem("token");
+    setIsAuthenticated(!!token);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/Login");
+    setIsAuthenticated(false);
+    navigate("/login");
   };
 
+  const activeLinkStyle = {
+    color: '#3b82f6', // blue-600
+    fontWeight: '600',
+  };
+
+  const navLinks = isAuthenticated ? (
+    <>
+      <NavLink to="/profile" style={({ isActive }) => isActive ? activeLinkStyle : undefined} className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
+        <User size={18} />
+        Profile
+      </NavLink>
+      <button
+        className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
+        onClick={handleLogout}
+      >
+        <LogOut size={18} />
+        Logout
+      </button>
+    </>
+  ) : (
+    <>
+      <NavLink to="/login" style={({ isActive }) => isActive ? activeLinkStyle : undefined} className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
+        <LogIn size={18} />
+        Login
+      </NavLink>
+      <NavLink to="/verify" style={({ isActive }) => isActive ? activeLinkStyle : undefined} className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+        <UserPlus size={18} />
+        Signup
+      </NavLink>
+    </>
+  );
+
   return (
-    <nav className="w-full fixed top-0 left-0 z-50 bg-white/70 backdrop-blur-md border-b border-gray-200 shadow-sm">
+    <header className="w-full fixed top-0 left-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <img src="/ms.png" alt="Mechanic Set Logo" className="w-10 h-10" />
+          <img src="/ms.png" alt="Mechanic Setu Logo" className="w-10 h-10" />
           <h1 className="text-2xl font-bold text-gray-900 drop-shadow-sm">
-            Mechanic Set
+            Mechanic Setu
           </h1>
         </div>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-4">
-          {!isAuthenticated ? (
-            <>
-              <button
-                className="flex items-center gap-2 px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-                onClick={() => navigate("/Login")}
-              >
-                <LogIn size={18} />
-                Login
-              </button>
-              <button
-                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-                onClick={() => navigate("/verify")}
-              >
-                <UserPlus size={18} />
-                Signup
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                className="flex items-center gap-2 px-5 py-2 rounded-lg hover:bg-gray-100 transition"
-                onClick={() => navigate("/profile")}
-              >
-                <User size={18} />
-                Profile
-              </button>
-              <button
-                className="flex items-center gap-2 px-5 py-2 rounded-lg hover:bg-gray-100 transition"
-                onClick={handleLogout}
-              >
-                <LogOut size={18} />
-                Logout
-              </button>
-            </>
-          )}
-        </div>
+        <nav className="hidden md:flex items-center gap-2">
+          {navLinks}
+        </nav>
 
         {/* Mobile Menu Button */}
         <button
           className="md:hidden p-2 text-gray-800 rounded-lg hover:bg-gray-200 transition"
           onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+          aria-expanded={menuOpen}
         >
           {menuOpen ? <X size={26} /> : <Menu size={26} />}
         </button>
@@ -77,26 +84,12 @@ export default function Navbar() {
 
       {/* Mobile Dropdown Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-lg transition-all duration-300">
-          <div className="flex flex-col gap-1 p-4">
-           
-              <>
-                <button
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
-                  onClick={() => navigate("/profile")}
-                >
-                  <User size={18} /> Profile
-                </button>
-                <button
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
-                  onClick={handleLogout}
-                >
-                  <LogOut size={18} /> Logout
-                </button>
-              </>
+        <nav className="md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-lg absolute w-full left-0 top-full">
+          <div className="flex flex-col gap-1 p-4" onClick={() => setMenuOpen(false)}>
+            {navLinks}
           </div>
-        </div>
+        </nav>
       )}
-    </nav>
+    </header>
   );
 }

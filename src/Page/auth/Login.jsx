@@ -1,53 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { GoogleLogin } from '@react-oauth/google'; // ✅ Import GoogleLogin
-import api from '../../utils/api'; 
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
+import api from '../../utils/api';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  // Optional: Add loading and success states for better user feedback
   const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-    const checkLogin = async () => {
-      try {
-        // Only check login if not on login page
-        if (!window.location.pathname.includes("/login")) return;
+  // Memoize the redirect path from the query parameters
+  const redirectPath = React.useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('redirect') || '/';
+  }, [location.search]);
 
-        const res = await api.get("core/me/"); // proxy-ready
-        if (res.data.username) {
-          window.location.href = '/';
-        }
-      } catch (err) {
-        console.log("Not logged in");
-      }
-    };
-    checkLogin();
-  }, []);
+  // Check if the user is already authenticated
+  const checkLoginStatus = useCallback(async () => {
+    try {
+      // This request will either succeed or throw a 401 error
+      await api.get("core/me/");
+      // If it succeeds, the user is already logged in, so redirect them
+      navigate(redirectPath, { replace: true });
+    } catch (err) {
+      // User is not logged in, which is expected on this page.
+      console.log("Not logged in, showing login page.");
+    }
+  }, [navigate, redirectPath]);
+
+  useEffect(() => {
+    checkLoginStatus();
+  }, [checkLoginStatus]);
 
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
     if (!email) {
       setError('Please enter your email.');
-      setLoading(false);
       return;
     }
+    setLoading(true);
     try {
-      const res = await api.post('/users/Login_SignUp/', { email: email });
-      navigate("/verify", { state: { key: res.data.key,id: res.data.id,status: res.data.status } });
+      const res = await api.post('/users/Login_SignUp/', { email });
+      navigate("/verify", { state: { key: res.data.key, id: res.data.id, status: res.data.status, email: email } });
     } catch (err) {
       console.error("Login failed:", err);
-      setError('Login failed. Please check your email or try again.');
+      setError(err.response?.data?.error || 'Login failed. Please check your email or try again.');
     } finally {
       setLoading(false);
     }
   };
-  // ✅ NEW: Google login handler based on your example
+
   const handleGoogleLogin = async (credentialResponse) => {
     setError('');
     if (!credentialResponse?.credential) {
@@ -56,21 +61,18 @@ const LoginPage = () => {
     }
     setLoading(true);
     try {
-      // Send the token received from Google to your backend
-      // Note: The endpoint should match your backend setup. Using '/users/google/' as per your API list.
       const res = await api.post("/users/google/", { token: credentialResponse.credential });
 
-      // Assuming a successful login from the backend, navigate the user
-      // You might want to store tokens from the response (res.data) before navigating
-      console.log("Backend response:", res.data);
+      // After successful Google login, the backend should set the necessary session/token
+      // Then we can navigate the user
       if (res.data.status === 'New User') {
-        navigate('/form', { state: { status: "Google" } }); // Redirect to a form page after login
+        navigate('/form', { state: { status: "Google" } });
       } else {
-        navigate('/'); 
+        navigate(redirectPath, { replace: true });
       }
     } catch (err) {
       console.error("Google login error:", err);
-      setError(err?.response?.data?.detail || "Google login failed on our server.");
+      setError(err.response?.data?.detail || "Google login failed on our server.");
     } finally {
       setLoading(false);
     }
@@ -88,7 +90,6 @@ const LoginPage = () => {
         </div>
 
         <form className="space-y-4" onSubmit={handleEmailLogin}>
-          {/* Email login form remains the same */}
           <div>
             <label htmlFor="email" className="sr-only">Email</label>
             <input
@@ -99,6 +100,7 @@ const LoginPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
+              autoComplete="email"
             />
           </div>
           <button
@@ -106,7 +108,7 @@ const LoginPage = () => {
             disabled={loading}
             className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:scale-95 transition-transform disabled:opacity-50"
           >
-            {loading ? 'Please wait...' : 'Login'}
+            {loading ? 'Please wait...' : 'Continue with Email'}
           </button>
         </form>
 
@@ -118,14 +120,13 @@ const LoginPage = () => {
           <hr className="w-full border-white/20" />
         </div>
         
-        {/* ✅ REPLACED: Use the GoogleLogin component instead of a button */}
         <div className="flex justify-center">
             <GoogleLogin
                 onSuccess={handleGoogleLogin}
                 onError={() => {
                     setError('Google Login Failed. Please try again.');
                 }}
-                useOneTap // Optional: for a smoother login experience
+                useOneTap
             />
         </div>
 
