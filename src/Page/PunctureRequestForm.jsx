@@ -35,7 +35,6 @@ export default function PunctureRequestFormRedesigned() {
   const mapInstanceRef = useRef(null);
   const MAPPLS_KEY = "a645f44a39090467aa143b8da31f6dbd";
 
-  // Data for form steps (remains the same)
   const vehicleTypes = [
     { id: 'bike', name: 'Bike/Scooter', icon: Bike },
     { id: 'car', name: 'Car / Sedan', icon: Car },
@@ -49,107 +48,84 @@ export default function PunctureRequestFormRedesigned() {
     { name: 'Tire Replacement', icon: '⚙️' },
   ];
 
-  // --- NEW: ROBUST MAP INITIALIZATION LOGIC ---
-  useEffect(() => {
-    // This effect manages the entire lifecycle of the map
-    // It only runs when the user is on Step 2
-    if (step !== 2) {
+ useEffect(() => {
+  if (step !== 2) return; // only load map on Step 2
+
+  let isMounted = true;
+
+  const loadSDK = () => {
+    // If SDK already loaded, just init map
+    if (window.mappls && window.mappls.Map) {
+      initializeMap();
       return;
     }
 
-    let isMounted = true;
-    let retryCount = 0;
+    // Avoid adding duplicate script
+    if (document.getElementById("mappls-sdk")) return;
 
-    const loadSDK = () => {
-      if (document.getElementById("mappls-sdk") || window.mappls) {
-        // If SDK is already there, proceed to initialize
-        initializeMap();
-        return;
-      }
+    setMapStatus("loading");
+    const script = document.createElement("script");
+    script.id = "mappls-sdk";
+    script.src = `https://apis.mappls.com/advancedmaps/api/${MAPPLS_KEY}/map_sdk?layer=vector&v=3.0`;
+    script.async = true;
+    script.defer = true;
 
-      setMapStatus("loading");
-      const script = document.createElement("script");
-      script.id = "mappls-sdk";
-      script.src = `https://apis.mappls.com/advancedmaps/api/${MAPPLS_KEY}/map_sdk?layer=vector&v=3.0`;
-      script.async = true;
-      script.defer = true;
-
-      script.onload = () => {
-        console.log("Mappls SDK loaded successfully");
-        if (isMounted) initializeMap();
-      };
-      script.onerror = () => {
-        console.error("Failed to load Mappls SDK");
-        if (isMounted) setMapStatus("error");
-      };
-      document.head.appendChild(script);
+    script.onload = () => {
+      console.log("✅ Mappls SDK loaded successfully");
+      if (isMounted) initializeMap();
+    };
+    script.onerror = () => {
+      console.error("❌ Failed to load Mappls SDK");
+      if (isMounted) setMapStatus("error");
     };
 
-    const initializeMap = () => {
-      if (!isMounted || mapInstanceRef.current) return;
+    document.head.appendChild(script);
+  };
 
-      // Retry if SDK or map container isn't ready yet
-      if (!window.mappls || !mapContainerRef.current) {
-        if (retryCount < 5) { // Retry up to 5 times
-          retryCount++;
-          console.warn(`Map prerequisites not ready. Retrying... (${retryCount})`);
-          setTimeout(initializeMap, 200);
-        } else {
-          console.error("Map prerequisites failed to load after multiple retries.");
-          if (isMounted) setMapStatus("error");
-        }
-        return;
-      }
-      
-      setMapStatus("loading");
+  const initializeMap = () => {
+    // Guard: container must exist
+    if (!mapContainerRef.current) {
+      console.warn("Map container not ready yet");
+      return;
+    }
+    // Guard: don’t re‑init
+    if (mapInstanceRef.current) return;
 
-      try {
-        const defaultCenter = { lat: 23.0225, lng: 72.5714 }; // Default to Ahmedabad
-        const map = new window.mappls.Map(mapContainerRef.current, {
-          center: defaultCenter,
-          zoom: 14,
-          zoomControl: true,
-        });
+    try {
+      const defaultCenter = { lat: 23.0225, lng: 72.5714 };
 
-        // The 'load' event is crucial - it confirms the map is truly ready
-        map.on('load', () => {
-          if (isMounted) {
-            console.log("✅ Map instance is fully loaded and ready.");
-            mapInstanceRef.current = map;
-            setMapStatus("loaded");
-          }
-        });
+      // This is the CORRECT way
+const map = new window.mappls.Map(mapContainerRef.current, {
+  center: defaultCenter,
+  zoom: 14,
+  onLoad: () => {
+    console.log("✅ Map loaded and ready");
+    mapInstanceRef.current = map;
+    setMapStatus("loaded");
+  },
+  onError: (err) => {
+    console.error("❌ Map error:", err);
+    setMapStatus("error");
+  }
+});
+    } catch (error) {
+      console.error("❌ Error creating map instance:", error);
+      setMapStatus("error");
+    }
+  };
 
-        map.on('error', (error) => {
-          console.error("Map error event:", error);
-          if (isMounted) setMapStatus("error");
-        });
+  loadSDK();
 
-      } catch (error) {
-        console.error("Error creating map instance:", error);
-        if (isMounted) setMapStatus("error");
-      }
-    };
+  return () => {
+    isMounted = false;
+    if (mapInstanceRef.current) {
+      console.log("🧹 Cleaning up map instance...");
+      mapInstanceRef.current = null;
+      setMapStatus("idle");
+    }
+  };
+}, [step, MAPPLS_KEY]);
 
-    // Start the process
-    loadSDK();
-
-    // Cleanup function: runs when step changes or component unmounts
-    return () => {
-      isMounted = false;
-      if (mapInstanceRef.current) {
-        console.log("Cleaning up map instance...");
-        try {
-          // Mappls doesn't have a dedicated destroy method, so we nullify refs
-          // and the browser's garbage collection will handle it.
-          mapInstanceRef.current = null;
-          setMapStatus("idle");
-        } catch (error) {
-          console.warn("Error during map cleanup:", error);
-        }
-      }
-    };
-  }, [step, MAPPLS_KEY]); // Effect depends on the current step
 
   const getAddressFromCoordinates = async (lat, lng) => {
     try {
@@ -192,14 +168,8 @@ export default function PunctureRequestFormRedesigned() {
       const address = await getAddressFromCoordinates(latitude, longitude);
       setFormData(prev => ({ ...prev, location: address }));
 
-      // Check if map is fully loaded before interacting with it
       if (mapStatus === 'loaded' && mapInstanceRef.current && window.mappls) {
         mapInstanceRef.current.setCenter(pos);
-        
-        // Remove previous markers/circles if they exist
-        // For simplicity, we assume one marker and circle for the user
-        // A more complex app would manage these in a state or ref array
-        
         new window.mappls.Marker({ map: mapInstanceRef.current, position: pos });
         new window.mappls.Circle({ map: mapInstanceRef.current, center: pos, radius: accuracy });
       }
@@ -233,8 +203,6 @@ export default function PunctureRequestFormRedesigned() {
     return false;
   };
 
-  // --- Sub-components for rendering steps (No changes here) ---
-
   const Step1_Vehicle = () => (
     <StepWrapper title="Select Your Vehicle">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -253,32 +221,31 @@ export default function PunctureRequestFormRedesigned() {
 
   const Step2_Location = () => (
     <StepWrapper title="Confirm Your Location">
-        <div className="space-y-4">
-            <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                    type="text"
-                    placeholder="Enter address manually"
-                    value={formData.location}
-                    onChange={handleManualLocationChange}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
-                />
-            </div>
-            <button
-                onClick={getUserLocation}
-                disabled={loadingLocation}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-sky-600 text-white rounded-lg font-semibold transition-colors hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed"
-            >
-                {loadingLocation ? <Loader className="animate-spin" size={20} /> : <Navigation size={20} />}
-                {loadingLocation ? "Fetching Location..." : "Use My Current Location"}
-            </button>
-            <div className="relative h-64 md:h-80 w-full bg-slate-800 rounded-lg border-2 border-slate-700 overflow-hidden">
-                {mapStatus === 'loading' && <MapOverlay icon={Loader} text="Loading Map..." spin />}
-                {mapStatus === 'error' && <MapOverlay icon={CircleHelp} text="Map failed to load." />}
-                {/* Use the new ref for the map container */}
-                <div ref={mapContainerRef} className="w-full h-full" />
-            </div>
+      <div className="space-y-4">
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input
+            type="text"
+            placeholder="Enter address manually"
+            value={formData.location}
+            onChange={handleManualLocationChange}
+            className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+          />
         </div>
+        <button
+          onClick={getUserLocation}
+          disabled={loadingLocation}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-sky-600 text-white rounded-lg font-semibold transition-colors hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed"
+        >
+          {loadingLocation ? <Loader className="animate-spin" size={20} /> : <Navigation size={20} />}
+          {loadingLocation ? "Fetching Location..." : "Use My Current Location"}
+        </button>
+        <div className="relative h-64 md:h-80 w-full bg-slate-800 rounded-lg border-2 border-slate-700 overflow-hidden">
+          {(mapStatus === 'loading' || mapStatus === 'idle') && <MapOverlay icon={Loader} text="Loading Map..." spin />}
+          {mapStatus === 'error' && <MapOverlay icon={CircleHelp} text="Map failed to load." />}
+          <div ref={mapContainerRef} className="w-full h-full" />
+        </div>
+      </div>
     </StepWrapper>
   );
 
@@ -304,8 +271,6 @@ export default function PunctureRequestFormRedesigned() {
       />
     </StepWrapper>
   );
-
-  // --- Main return and UI Helper Components (No changes here) ---
 
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-4 font-sans">
@@ -358,9 +323,6 @@ export default function PunctureRequestFormRedesigned() {
     </div>
   );
 }
-
-
-// --- UI HELPER COMPONENTS ---
 
 const StepWrapper = ({ title, children }) => (
   <motion.div
