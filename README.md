@@ -6,6 +6,9 @@
 > "Mechanic Setu" is an on-demand roadside assistance platform that connects vehicle owners with nearby, verified mechanics for issues like flat tires or minor mechanical faults. It functions as a real-time marketplace, offering convenience and speed to users while providing mechanics with a new customer acquisition channel. The system consists of user and mechanic apps built with React and a Django backend.
 > 
 > **[Try Mechanic Setu Live\!](https://mechanicsetu.netlify.app/)**
+>
+> **[Try Mechanic Setu Mechanic\!](https://mechanic-setu.netlify.app/)**
+
 
  
  ----
@@ -34,7 +37,7 @@ This project was brought to life by:
 
 ## 📈 Repository Activity
 
-> ![Alt](https://repobeats.axiom.co/api/embed/de4cf7816ee7077e7d887c620d88314ac5663b66.svg "Repobeats analytics image")
+> ![Activity](https://repobeats.axiom.co/api/embed/de4cf7816ee7077e7d887c620d88314ac5663b66.svg "Repobeats analytics image")
 
 
 ## 💬 Feedback
