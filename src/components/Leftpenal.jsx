@@ -19,7 +19,7 @@ export default function LeftPanel() {
           placeholder="Search..."
           className="flex-1 px-3 py-2 rounded-lg bg-white text-sm text-gray-800 shadow-sm outline-none placeholder-gray-400"
         />
-        <div className="w-7 h-7 flex items-center justify-center rounded-full bg-red-800 text-white text-xs font-semibold cursor-pointer">
+        <div onClick={() => navigate("/profile")} className="w-7 h-7 flex items-center justify-center rounded-full bg-red-800 text-white text-xs font-semibold cursor-pointer">
           M
         </div>
       </div>
