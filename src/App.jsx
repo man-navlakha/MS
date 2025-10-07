@@ -14,6 +14,7 @@ import ProfilePage from "./Page/ProfilePage";
 
 
 import Protected from './ProtectedRoute'
+import FindingMechanic from './Page/FindingMechanic';
 export default function App() {
   return (
      <div className="App transition-all duration-500 ease-in-out bg-white">
@@ -51,6 +52,11 @@ export default function App() {
           <Route path="/request" element={
             <Protected>
               <PunctureRequestForm />
+            </Protected>
+          } />
+          <Route path="/finding/:request_id" element={
+            <Protected>
+              <FindingMechanic />
             </Protected>
           } />
 
