@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaUser, FaPhone, FaEnvelope } from "react-icons/fa";
 import api from "../../utils/api";
+
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 const ProcessForm = () => {
   // Read status from route state safely inside the component
   const location = useLocation(); // useLocation must be called within the component [web:146]
@@ -50,34 +53,34 @@ const ProcessForm = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    // Build payload conditionally
-    const payload = {
-      first_name: status === "Google" ? null : formData.firstName,
-      last_name: status === "Google" ? null : formData.lastName,
-      mobile_number: formData.phone,
-      profile_pic: status === "Google" ? null : "https://mphkxojdifbgafp1.public.blob.vercel-storage.com/Profile/profile-pic%20%287%29.png"
-    };
+    try {
+      // Build payload conditionally
+      const payload = {
+        first_name: status === "Google" ? null : formData.firstName,
+        last_name: status === "Google" ? null : formData.lastName,
+        mobile_number: formData.phone,
+        profile_pic: status === "Google" ? null : "https://mphkxojdifbgafp1.public.blob.vercel-storage.com/Profile/profile-pic%20%287%29.png"
+      };
 
-    // POST to backend
-    const res = await api.post("/users/SetUsersDetail/", payload); // adjust path if trailing slash required
-    console.log("Saved user details:", res.data);
+      // POST to backend
+      const res = await api.post("/users/SetUsersDetail/", payload); // adjust path if trailing slash required
+      console.log("Saved user details:", res.data);
 
-    // Move to the success/thank you step
-    setStep((s) => s + 1);
+      // Move to the success/thank you step
+      setStep((s) => s + 1);
 
-    // Redirect to home page after 2 seconds
-    setTimeout(() => {
-      navigate("/");
-    }, 2000);
-  } catch (err) {
-    console.error("Save failed:", err);
-    // Surface a basic error in UI; optionally map server errors to fields
-    setErrors((prev) => ({ ...prev, submit: "Failed to save details. Try again." }));
-  }
-};
+      // Redirect to home page after 2 seconds
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+    } catch (err) {
+      console.error("Save failed:", err);
+      // Surface a basic error in UI; optionally map server errors to fields
+      setErrors((prev) => ({ ...prev, submit: "Failed to save details. Try again." }));
+    }
+  };
 
   // --- PROGRESS BAR COMPONENT ---
   const ProgressBar = ({ currentStep }) => {
@@ -89,25 +92,22 @@ const ProcessForm = () => {
             <React.Fragment key={index}>
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 flex items-center justify-center rounded-full text-white transition-all duration-300 ${
-                    currentStep > index ? "bg-blue-600" : "bg-white/30"
-                  }`}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full text-white transition-all duration-300 ${currentStep > index ? "bg-blue-600" : "bg-white/30"
+                    }`}
                 >
                   {index + 1}
                 </div>
                 <p
-                  className={`mt-2 text-xs text-center ${
-                    currentStep > index ? "text-white" : "text-gray-400"
-                  }`}
+                  className={`mt-2 text-xs text-center ${currentStep > index ? "text-white" : "text-gray-400"
+                    }`}
                 >
                   {stepLabel}
                 </p>
               </div>
               {index < steps.length - 1 && (
                 <div
-                  className={`flex-1 h-1 mx-2 transition-all duration-300 ${
-                    currentStep > index + 1 ? "bg-blue-600" : "bg-white/30"
-                  }`}
+                  className={`flex-1 h-1 mx-2 transition-all duration-300 ${currentStep > index + 1 ? "bg-blue-600" : "bg-white/30"
+                    }`}
                 ></div>
               )}
             </React.Fragment>
@@ -160,12 +160,19 @@ const ProcessForm = () => {
             </h2>
             <div>
               <label className="text-gray-300">Phone Number</label>
-              <input
-                type="tel"
+              <PhoneInput
+                international
+                defaultCountry="US" // or your desired default country
                 value={formData.phone}
-                onChange={handleChange("phone")}
+                onChange={(value) => {
+                  setFormData({ ...formData, phone: value });
+                  if (errors.phone) {
+                    setErrors({ ...errors, phone: "" });
+                  }
+                }}
                 className="w-full mt-1 px-4 py-3 bg-white/20 rounded-lg border border-transparent focus:border-white/50 focus:ring-0 text-white placeholder-gray-300 focus:outline-none transition"
               />
+
               {errors.phone && (
                 <p className="text-red-400 text-sm mt-1">{errors.phone}</p>
               )}
