@@ -15,13 +15,18 @@ import {
   Loader,
   CircleHelp
 } from 'lucide-react';
+import api from '../utils/api';
 
 // Main Component
 export default function PunctureRequestFormRedesigned() {
   const [step, setStep] = useState(1);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [mapStatus, setMapStatus] = useState("idle"); // "idle", "loading", "loaded", "error"
-  const [locationStatus, setLocationStatus] = useState("idle"); // "idle", "getting", "success", "error"
+  const [locationStatus, setLocationStatus] = useState("idle");
+const [socket, setSocket] = useState(null);
+const [connectionStatus, setConnectionStatus] = useState('disconnected'); // "disconnected", "connecting", "connected", "error"
+const reconnectAttempts = useRef(0);
+ // "idle", "getting", "success", "error"
   const [formData, setFormData] = useState({
     vehicleType: '',
     location: '',
@@ -47,6 +52,70 @@ export default function PunctureRequestFormRedesigned() {
     { name: 'Battery Jumpstart', icon: '🔋' },
     { name: 'Tire Replacement', icon: '⚙️' },
   ];
+
+
+const connectWebSocket = async () => {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    return;
+  }
+
+  setConnectionStatus('connecting');
+  try {
+  const res = await api.get("core/ws-token/", { withCredentials: true });
+      const wsToken = res.data.ws_token;
+      if (!wsToken) throw new Error("Failed to get WebSocket token");
+
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    const wsScheme = isProduction ? "wss" : "ws";
+    const backendHost = isProduction
+      ? (process.env.REACT_APP_BACKEND_HOST || 'mechanic-setu.onrender.com').replace(/^(https?:\/\/)/, '')
+      : window.location.host;
+
+    const wsUrl = `${wsScheme}://${backendHost}/ws/job_notifications/?token=${wsToken}`;
+    const newSocket = new WebSocket(wsUrl);
+newSocket.onopen = () => console.log("[Test WS] Connected");
+newSocket.onmessage = (e) => console.log("[Test WS] Received:", e.data);
+newSocket.send("Hello");
+    newSocket.onopen = () => {
+      console.log("[WS] Connected");
+      setSocket(newSocket);
+      setConnectionStatus('connected');
+      reconnectAttempts.current = 0;
+    };
+
+    newSocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("[WS] Message:", data);
+        window.dispatchEvent(new CustomEvent('newJobAvailable', { detail: data }));
+      } catch (e) {
+        console.error("Error parsing WS message", e);
+      }
+    };
+
+    newSocket.onclose = () => {
+      console.log("[WS] Disconnected");
+      setSocket(null);
+      setConnectionStatus('disconnected');
+    };
+
+    newSocket.onerror = (error) => {
+      console.error("[WS] Error:", error);
+      setConnectionStatus('error');
+    };
+  } catch (error) {
+    console.error("[WS] Connection setup failed:", error);
+    setConnectionStatus('error');
+  }
+};
+
+const disconnectWebSocket = () => {
+  if (socket) {
+    socket.close(1000, "User initiated disconnect");
+  }
+};
+
 
  useEffect(() => {
   if (step !== 2) return; // only load map on Step 2
@@ -193,51 +262,56 @@ const map = new window.mappls.Map(mapContainerRef.current, {
   const handlePrev = () => step > 1 && setStep(step - 1);
 
   const handleSubmit = async () => {
-    const getCookie = (name) => {
-      let cookieValue = null;
-      if (document.cookie && document.cookie !== "") {
-        const cookies = document.cookie.split(";");
-        for (let i = 0; i < cookies.length; i++) {
-          const cookie = cookies[i].trim();
-          if (cookie.substring(0, name.length + 1) === name + "=") {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-            break;
-          }
+  const getCookie = (name) => {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
         }
       }
-      return cookieValue;
-    };
-    const csrftoken = getCookie("csrftoken");
-
-    try {
-      const response = await fetch("/api/jobs/CreateServiceRequest/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrftoken,
-        },
-        body: JSON.stringify({
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          location: formData.location,
-          vehical_type: formData.vehicleType,
-          problem: formData.problem,
-          additional_details: formData.additionalNotes,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Form Submitted:", data);
-        alert("Request submitted! We will be in touch shortly.");
-      } else {
-        alert("Failed to submit request. Please try again.");
-      }
-    } catch (error) {
-      console.error("Submit error:", error);
-      alert("An error occurred. Please try again.");
     }
+    return cookieValue;
   };
+  const csrftoken = getCookie("csrftoken");
+
+  try {
+    const response = await fetch("/api/jobs/CreateServiceRequest/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrftoken,
+      },
+      body: JSON.stringify({
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        location: formData.location,
+        vehicle_type: formData.vehicleType,
+        problem: formData.problem,
+        additional_details: formData.additionalNotes,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("✅ Form Submitted:", data);
+      alert("Request submitted! We will be in touch shortly.");
+
+      // ✅ Connect WebSocket after successful submission
+      await connectWebSocket();
+
+    } else {
+      alert("Failed to submit request. Please try again.");
+    }
+  } catch (error) {
+    console.error("Submit error:", error);
+    alert("An error occurred. Please try again.");
+  }
+};
+
 
   const canProceed = () => {
     if (step === 1) return !!formData.vehicleType;
