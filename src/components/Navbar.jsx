@@ -25,32 +25,20 @@ export default function Navbar() {
     fontWeight: '600',
   };
 
-  const navLinks = isAuthenticated ? (
+  const navLinks = 
     <>
       <NavLink to="/profile" style={({ isActive }) => isActive ? activeLinkStyle : undefined} className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
         <User size={18} />
         Profile
       </NavLink>
-      <button
+      <NavLink to="/logout"
         className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
-        onClick={handleLogout}
+        onClick={() => navigate("/logout")}
       >
         <LogOut size={18} />
         Logout
-      </button>
-    </>
-  ) : (
-    <>
-      <NavLink to="/login" style={({ isActive }) => isActive ? activeLinkStyle : undefined} className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
-        <LogIn size={18} />
-        Login
-      </NavLink>
-      <NavLink to="/verify" style={({ isActive }) => isActive ? activeLinkStyle : undefined} className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
-        <UserPlus size={18} />
-        Signup
       </NavLink>
     </>
-  );
 
   return (
     <header className="w-full fixed top-0 left-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
