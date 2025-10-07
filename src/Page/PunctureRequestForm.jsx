@@ -25,10 +25,6 @@ export default function PunctureRequestFormRedesigned() {
       const [loadingLocation, setLoadingLocation] = useState(false);
       const [mapStatus, setMapStatus] = useState("idle");
       const [locationStatus, setLocationStatus] = useState("idle");
-      const [socket, setSocket] = useState(null);
-      const [connectionStatus, setConnectionStatus] = useState('disconnected');
-      const reconnectAttempts = useRef(0);
-
       const [formData, setFormData] = useState({
             vehicleType: '',
             location: '',

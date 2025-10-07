@@ -1,13 +1,12 @@
-// FindingMechanic.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Add these imports
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Wrench, Clock, MapPin, User, Phone, Loader, CheckCircle, X, Home } from 'lucide-react';
 import api from '../utils/api';
 
 export default function FindingMechanic() {
-  const { request_id } = useParams(); // Get request_id from URL
-  const navigate = useNavigate(); // For navigation
+  const { request_id } = useParams();
+  const navigate = useNavigate();
   const [status, setStatus] = useState('searching');
   const [mechanic, setMechanic] = useState(null);
   const [estimatedTime, setEstimatedTime] = useState(null);
@@ -16,14 +15,12 @@ export default function FindingMechanic() {
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const timerRef = useRef(null);
 
-  // Timer for tracking search duration
   useEffect(() => {
     if (status === 'searching') {
       timerRef.current = setInterval(() => {
         setSearchTime(prev => prev + 1);
       }, 1000);
     }
-
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -31,14 +28,12 @@ export default function FindingMechanic() {
     };
   }, [status]);
 
-  // Format time in MM:SS
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // WebSocket connection
   useEffect(() => {
     let isMounted = true;
     let ws = null;
@@ -47,34 +42,36 @@ export default function FindingMechanic() {
       if (!isMounted || !request_id) return;
 
       setConnectionStatus('connecting');
-      
+      console.log('%c[USER-WS] Attempting to connect...', 'color: #FFA500;');
+
       try {
-        // Get WebSocket token
         const res = await api.get("core/ws-token/", { withCredentials: true });
         const wsToken = res.data.ws_token;
         
         if (!wsToken) throw new Error("Failed to get WebSocket token");
+        console.log('[USER-WS] Successfully fetched WebSocket token.');
 
-        const isProduction = process.env.NODE_ENV === 'production';
+        const isProduction = import.meta.env.PROD;
         const wsScheme = isProduction ? "wss" : "ws";
         const backendHost = isProduction
-          ? (process.env.REACT_APP_BACKEND_HOST || 'mechanic-setu.onrender.com').replace(/^(https?:\/\/)/, '')
+          ? (import.meta.env.VITE_BACKEND_HOST || 'mechanic-setu.onrender.com').replace(/^(https?:\/\/)/, '')
           : window.location.host;
 
         const wsUrl = `${wsScheme}://${backendHost}/ws/job_notifications/?token=${wsToken}`;
+        console.log(`[USER-WS] Connecting to: ${wsUrl}`);
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
-          console.log("[FindingMechanic] WebSocket connected");
+          console.log('%c[USER-WS] Connection successful!', 'color: #4CAF50; font-weight: bold;');
           if (isMounted) {
             setSocket(ws);
             setConnectionStatus('connected');
             
-            // Send request_id to WebSocket after connection is established
             const message = {
               type: 'subscribe_to_request',
               request_id: parseInt(request_id)
             };
+            console.log('[USER-WS] Sending subscription message:', message);
             ws.send(JSON.stringify(message));
           }
         };
@@ -84,37 +81,39 @@ export default function FindingMechanic() {
 
           try {
             const data = JSON.parse(event.data);
-            console.log("[FindingMechanic] Received:", data);
+            console.log('%c[USER-WS] Message Received:', 'color: #2196F3; font-weight: bold;', data);
 
-            // Handle different message types
             switch (data.type) {
               case 'mechanic_assigned':
+                console.log('[USER-WS] Mechanic assigned. Updating UI.');
                 handleMechanicAssigned(data);
                 break;
               case 'searching_mechanic':
+                console.log('[USER-WS] Server confirmed: searching for mechanic.');
                 setStatus('searching');
                 break;
               case 'estimated_time_update':
+                console.log(`[USER-WS] Received estimated time update: ${data.estimated_minutes} min.`);
                 setEstimatedTime(data.estimated_minutes);
                 break;
               case 'error':
-                console.error("WebSocket error:", data.message);
+                console.error('[USER-WS] Received error message from server:', data.message);
                 setStatus('error');
                 break;
               default:
-                console.log("Unknown message type:", data);
+                console.log('[USER-WS] Received unknown message type:', data);
             }
           } catch (error) {
-            console.error("Error parsing WebSocket message:", error);
+            console.error('[USER-WS] Error parsing message:', error);
           }
         };
 
         ws.onclose = (event) => {
-          console.log("[FindingMechanic] WebSocket disconnected:", event.code, event.reason);
+          console.warn(`[USER-WS] Disconnected. Code: ${event.code}, Reason: ${event.reason}`);
           if (isMounted) {
             setConnectionStatus('disconnected');
             if (status === 'searching') {
-              // Try to reconnect if we're still searching
+              console.log('[USER-WS] Attempting to reconnect in 3 seconds...');
               setTimeout(() => {
                 if (isMounted) connectWebSocket();
               }, 3000);
@@ -123,14 +122,14 @@ export default function FindingMechanic() {
         };
 
         ws.onerror = (error) => {
-          console.error("[FindingMechanic] WebSocket error:", error);
+          console.error('[USER-WS] An error occurred:', error);
           if (isMounted) {
             setConnectionStatus('error');
           }
         };
 
       } catch (error) {
-        console.error("[FindingMechanic] WebSocket connection failed:", error);
+        console.error('[USER-WS] Connection setup failed:', error);
         if (isMounted) {
           setConnectionStatus('error');
           setStatus('error');
@@ -153,6 +152,7 @@ export default function FindingMechanic() {
     return () => {
       isMounted = false;
       if (ws) {
+        console.log('[USER-WS] Component unmounting. Closing WebSocket.');
         ws.close(1000, "Component unmounted");
       }
       if (timerRef.current) {
@@ -167,12 +167,13 @@ export default function FindingMechanic() {
         type: 'cancel_request',
         request_id: parseInt(request_id)
       };
+      console.log('[USER-WS] Sending cancel message:', cancelMessage);
       socket.send(JSON.stringify(cancelMessage));
     }
-    
-    // Navigate back to home or form page
     navigate('/');
   };
+
+  // ... (rest of the component remains the same)
 
   const handleGoHome = () => {
     navigate('/');
