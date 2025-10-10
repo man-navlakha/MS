@@ -41,14 +41,14 @@ export default function Navbar() {
     </>
 
   return (
-    <header className="w-full fixed top-0 left-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
+    <header className="w-full fixed top-0 left-0 z-50 bg-white/80 backdrop-blur-md border-b-2 border-gray-900/30 rounded-b-3xl shadow-sm">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <img src="/ms.png" alt="Mechanic Setu Logo" className="w-10 h-10" />
+          <img src="/ms.png" alt="Mechanic Setu Logo" className="w-19 h-19 -my-10" />
           <h1 className="text-2xl font-bold text-gray-900 drop-shadow-sm">
             Mechanic Setu
           </h1>

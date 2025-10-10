@@ -7,9 +7,9 @@ export default function LeftPanel() {
 
   return (
     <aside className="
-      w-72 bg-gray-200 rounded-xl shadow-md p-4 flex flex-col items-center justify-start space-y-3
+      w-full bg-gray-200 rounded-3xl border-t-2 -mb-2 border-gray-900/30 shadow-md p-4 flex flex-col items-center justify-start space-y-3
       md:static md:h-auto md:w-72
-      fixed bottom-4 left-1/2 -translate-x-1/2 z-50
+      fixed pb-8  bottom-0 left-1/2 -translate-x-1/2 z-50
       md:translate-x-0 md:bottom-auto
     ">
       {/* Search + Avatar */}
@@ -33,7 +33,7 @@ export default function LeftPanel() {
       </button>
 
       {/* Past Order Card (Hidden on small screens) */}
-      <div className="hidden md:flex w-full flex-1 bg-white border border-gray-300 rounded-lg items-center justify-center text-gray-600 text-sm">
+      <div className="hidden md:flex w-full h-[360px] bg-white border border-gray-300 rounded-lg items-center justify-center text-gray-600 text-sm">
         Past order
       </div>
     </aside>
