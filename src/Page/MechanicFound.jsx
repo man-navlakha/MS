@@ -210,12 +210,20 @@ export default function MechanicFound() {
             )}
             <button
               onClick={handleCallMechanic}
-              className="flex items-center gap-3 p-3 bg-green-600 hover:bg-green-500 rounded-lg"
+              className="flex items-center justify-center gap-3 p-3 bg-green-600 hover:bg-green-500 rounded-lg"
             >
               <Phone size={20} />
               <div>
                 <span className="font-semibold block">Call Now</span>
-                <span className="text-xs text-green-200">Contact Mechanic</span>
+              </div>
+            </button>
+            <button
+              onClick={handleCallMechanic}
+              className="flex items-center justify-center gap-3 p-3 bg-green-600 hover:bg-green-500 rounded-lg"
+            >
+              <Phone size={20} />
+              <div>
+                <span className="font-semibold block">Call Now</span>
               </div>
             </button>
           </div>
