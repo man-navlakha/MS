@@ -10,8 +10,8 @@ import Logout from "./Page/auth/Logout";
 import ProcessForm from "./Page/auth/ProcessForm";
 import PunctureRequestForm from "./Page/PunctureRequestForm";
 import ProfilePage from "./Page/ProfilePage";
-
-
+import MechanicFound from './Page/MechanicFound';
+import RequestLayout from './Page/RequestLayout'; 
 
 import Protected from './ProtectedRoute'
 import FindingMechanic from './Page/FindingMechanic';
@@ -54,11 +54,15 @@ export default function App() {
               <PunctureRequestForm />
             </Protected>
           } />
-          <Route path="/finding/:request_id" element={
-            <Protected>
-              <FindingMechanic />
-            </Protected>
-          } />
+
+          {/* Routes that share the WebSocket connection */}
+          <Route element={<Protected><RequestLayout /></Protected>}>
+          <Route path="/finding/:request_id" element={<FindingMechanic />} />
+          <Route path="/mechanic-found" element={<MechanicFound />} />
+          </Route>
+
+
+          
 
           {/* You can add a "Not Found" route as a fallback */}
           {/* <Route path="*" element={<NotFound />} /> */}
