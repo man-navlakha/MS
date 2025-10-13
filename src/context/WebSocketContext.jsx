@@ -1,5 +1,3 @@
-// src/context/WebSocketContext.jsx
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 import { toast } from 'react-hot-toast';
@@ -16,7 +14,6 @@ export const WebSocketProvider = ({ children }) => {
 
   useEffect(() => {
     const connect = async () => {
-      // Prevent multiple connections if one is already open
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         console.log('%c[WS-PROVIDER] WebSocket already connected.', 'color: #008000;');
         return;
@@ -28,9 +25,7 @@ export const WebSocketProvider = ({ children }) => {
       try {
         const res = await api.get("core/ws-token/", { withCredentials: true });
         const wsToken = res.data.ws_token;
-        if (!wsToken) {
-          throw new Error("Failed to get WebSocket token");
-        }
+        if (!wsToken) throw new Error("Failed to get WebSocket token");
 
         const isProduction = import.meta.env.PROD;
         const wsScheme = isProduction ? "wss" : "ws";
@@ -44,28 +39,22 @@ export const WebSocketProvider = ({ children }) => {
 
         ws.current.onopen = () => {
           console.log('%c[WS-PROVIDER] ==> Connection successful!', 'color: #008000; font-weight: bold;');
-          toast.success('Real-time connection established.');
           setConnectionStatus('connected');
           setSocket(ws.current);
         };
 
         ws.current.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            console.log('%c[WS-PROVIDER] ==> Message Received:', 'color: #00008B; font-weight: bold;', data);
-            setLastMessage(data); // This triggers updates in components
-          } catch (e) {
-            console.error('[WS-PROVIDER] Error parsing incoming message:', e);
-          }
+          const data = JSON.parse(event.data);
+          console.log('%c[WS-PROVIDER] ==> Message Received:', 'color: #00008B; font-weight: bold;', data);
+          setLastMessage(data);
         };
 
         ws.current.onclose = (event) => {
           console.warn(`[WS-PROVIDER] ==> Disconnected. Code: ${event.code}, Reason: ${event.reason}`);
-          if (event.code !== 1000) { // Don't show error for normal closures
+          if (event.code !== 1000) {
             toast.error('Real-time connection lost.');
           }
           setConnectionStatus('disconnected');
-          setSocket(null);
         };
 
         ws.current.onerror = (error) => {
@@ -76,7 +65,6 @@ export const WebSocketProvider = ({ children }) => {
 
       } catch (error) {
         console.error('[WS-PROVIDER] ==> Connection setup failed:', error);
-        toast.error('Failed to establish real-time connection.');
         setConnectionStatus('error');
       }
     };
@@ -90,9 +78,8 @@ export const WebSocketProvider = ({ children }) => {
         ws.current = null;
       }
     };
-  }, []); // The empty dependency array is crucial. It ensures this runs only once.
+  }, []);
 
-  // This effect will log every time a new message is processed
   useEffect(() => {
     if (lastMessage) {
         console.log('%c[WS-PROVIDER] State updated with new message:', 'color: #FF00FF;', lastMessage);

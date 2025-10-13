@@ -22,18 +22,19 @@ const MainPage = () => {
   const MAPPLS_KEY = "a645f44a39090467aa143b8da31f6dbd";
 
   // Check for an active job in localStorage when the component mounts
-  useEffect(() => {
+   useEffect(() => {
     try {
       const savedJobData = JSON.parse(localStorage.getItem(ACTIVE_JOB_STORAGE_KEY));
+      // Set state ONLY if the data is valid
       if (savedJobData && savedJobData.request_id) {
         setActiveJob(savedJobData);
       } else {
-        // **This is the fix**: Explicitly clear the activeJob state
+        // Explicitly set to null if no valid data is found
         setActiveJob(null);
       }
     } catch (error) {
       console.error("Failed to parse active job data from localStorage", error);
-      // Also clear on error to be safe
+      // Also clear state on parsing error
       setActiveJob(null);
     }
   }, []);
