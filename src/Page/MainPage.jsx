@@ -1,7 +1,13 @@
+// src/Page/MainPage.jsx
+
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import LeftPanel from "../components/Leftpenal";
+import { ArrowRight } from 'lucide-react';
+
+// Key for storing active job data in localStorage (must match MechanicFound.jsx)
+const ACTIVE_JOB_STORAGE_KEY = 'activeJobData';
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -11,8 +17,22 @@ const MainPage = () => {
   const [mapStatus, setMapStatus] = useState("loading");
   const [locationStatus, setLocationStatus] = useState("getting");
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [activeJob, setActiveJob] = useState(null);
 
   const MAPPLS_KEY = "a645f44a39090467aa143b8da31f6dbd";
+
+  // Check for an active job in localStorage when the component mounts
+  useEffect(() => {
+    try {
+      const savedJobData = JSON.parse(localStorage.getItem(ACTIVE_JOB_STORAGE_KEY));
+      if (savedJobData && savedJobData.request_id) {
+        setActiveJob(savedJobData);
+      }
+    } catch (error) {
+      console.error("Failed to parse active job data from localStorage", error);
+    }
+  }, []);
+
 
   // Load Mappls SDK
   useEffect(() => {
@@ -94,17 +114,42 @@ const MainPage = () => {
     if (map) getUserLocation(map);
   };
 
+  // Handle navigating to the active job
+  const handleGoToActiveJob = () => {
+    if (activeJob && activeJob.request_id) {
+      navigate(`/mechanic-found/${activeJob.request_id}`);
+    }
+  };
+
+
   return (
     <div className="relative h-screen w-screen flex flex-col overflow-hidden">
       {/* Navbar */}
       <Navbar />
+
+      {/* Active Job Banner */}
+      {activeJob && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 w-11/12 max-w-md">
+          <button
+            onClick={handleGoToActiveJob}
+            className="w-full bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center justify-between hover:bg-green-700 transition-transform active:scale-95"
+          >
+            <div className="text-left">
+              <p className="font-bold">A job is currently in progress!</p>
+              <p className="text-sm opacity-90">Click to view mechanic's location.</p>
+            </div>
+            <ArrowRight size={20} />
+          </button>
+        </div>
+      )}
+
 
       {/* Map Container */}
       <div ref={mapRef} id="map" className="absolute inset-0 -z-0" />
 
       {/* Left Panel (over map) */}
       <div className="absolute top-20 left-4 z-10">
-        <LeftPanel />
+        <LeftPanel activeJob={activeJob} />
       </div>
 
       {/* Map Status */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { User, Clock, Phone, Home } from 'lucide-react';
+import { User, Clock, Phone, Home, Wifi, WifiOff } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import AdBanner from '../components/AdBanner';
 import api from '../utils/api';
@@ -9,7 +9,54 @@ import { toast } from 'react-hot-toast';
 // Key for storing active job data in localStorage
 const ACTIVE_JOB_STORAGE_KEY = 'activeJobData';
 
+
+const ConnectionStatus = () => {
+  const { connectionStatus } = useWebSocket();
+
+  let statusContent;
+  switch (connectionStatus) {
+    case 'connected':
+      statusContent = (
+        <div className="flex items-center text-green-600">
+          <Wifi size={16} className="mr-2" />
+          <span>Connected</span>
+        </div>
+      );
+      break;
+    case 'connecting':
+      statusContent = (
+        <div className="flex items-center text-yellow-600">
+          <Clock size={16} className="mr-2 animate-spin" />
+          <span>Connecting...</span>
+        </div>
+      );
+      break;
+    case 'disconnected':
+    case 'error':
+      statusContent = (
+        <div className="flex items-center text-red-600">
+          <WifiOff size={16} className="mr-2" />
+          <span>Disconnected</span>
+        </div>
+      );
+      break;
+    default:
+      statusContent = null;
+  }
+
+  return (
+    <div className="fixed bottom-4 right-4 bg-white/80 backdrop-blur-md px-4 py-2 rounded-full shadow-lg text-sm font-semibold">
+      {statusContent}
+    </div>
+  );
+};
+
+
+
 export default function MechanicFound() {
+
+
+
   const navigate = useNavigate();
   const location = useLocation();
   // Get request_id from URL parameters
@@ -230,8 +277,8 @@ export default function MechanicFound() {
 
   const handleCancelConfirm = async () => {
     if (!selectedReason) {
-        toast.error("Please select a reason for cancellation.");
-        return;
+      toast.error("Please select a reason for cancellation.");
+      return;
     }
     try {
       await api.post(`jobs/CancelServiceRequest/${request_id}/`, {
@@ -260,13 +307,15 @@ export default function MechanicFound() {
       navigate('/');
     }
   }, [mechanic, navigate]);
-  
+
   if (!mechanic) {
     return null; // Render nothing while redirecting
   }
 
   return (
     <>
+
+      <ConnectionStatus />
       {/* Top Status Header */}
       <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-5 shadow-md">
         <div className="flex items-center justify-between">
