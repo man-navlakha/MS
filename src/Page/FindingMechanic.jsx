@@ -36,7 +36,7 @@ export default function FindingMechanic() {
 
   useEffect(() => {
     if (lastMessage?.type === 'mechanic_accepted') {
-      navigate('/mechanic-found', {
+      navigate(`/mechanic-found/${request_id}/`, {
         state: {
           mechanic: lastMessage.mechanic_details,
           estimatedTime: lastMessage.estimated_arrival_time,

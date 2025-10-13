@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Clock, Phone, Home } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import AdBanner from '../components/AdBanner'; // adjust path if needed
+import api from '../utils/api';
 
 
 export default function MechanicFound() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { lastMessage } = useWebSocket();
+  const { request_id } = useParams();
+  const [isCancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedReason, setSelectedReason] = useState('');
+  const username = "test_user"; // Replace with actual logged-in username
+
+  const { socket, lastMessage } = useWebSocket();
+
 
   const { mechanic: initialMechanic, estimatedTime: initialETA } = location.state || {};
   const [mechanic] = useState(initialMechanic);
@@ -112,6 +120,8 @@ export default function MechanicFound() {
   }, [userLocation, mechanicLocation]);
 
   useEffect(() => {
+
+    console.log(lastMessage)
     if (lastMessage?.type === 'mechanic_location_update') {
       setMechanicLocation({
         lat: lastMessage.latitude,
@@ -122,11 +132,56 @@ export default function MechanicFound() {
     if (lastMessage?.type === 'eta_update') {
       setEstimatedTime(lastMessage.eta);
     }
+
+    if (lastMessage?.type === 'job_completed') {
+      alert(`Job Completed: ${lastMessage.message || "Your mechanic has completed the job."}`);
+      navigate('/'); // or navigate to a review page if needed
+      toast.success(lastMessage.message || "Job completed successfully!");
+
+    }
+
+     if (lastMessage?.type === 'job_cancelled_notification') {
+    alert(`Job Cancelled: ${lastMessage.message || "The request has been cancelled."}`);
+    navigate('/');
+  }
+    if (lastMessage?.type === 'job_cancelled') {
+      alert(`Job Cancelled: ${lastMessage.message || "The request has been cancelled."}`);
+      navigate('/');
+    }
   }, [lastMessage]);
 
   const handleCallMechanic = () => {
     if (mechanic?.phone_number) {
       window.open(`tel:${mechanic.phone_number}`);
+    }
+  };
+  const handleCancelConfirm = async () => {
+    try {
+      await api.post(`jobs/CancelServiceRequest/${request_id}/`, {
+        cancellation_reason: username + " " + selectedReason,
+      });
+
+      // ✅ No need to send WebSocket message manually
+
+      navigate('/');
+    } catch (error) {
+      console.error("Failed to cancel service request:", error);
+
+      let errorMessage = "Cancellation failed. Please try again.";
+
+      if (error.response && error.response.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage += " " + error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage += " " + error.response.data.message;
+        } else {
+          errorMessage += " " + JSON.stringify(error.response.data.error);
+        }
+      }
+
+      alert(errorMessage);
+    } finally {
+      setCancelModalOpen(false);
     }
   };
 
@@ -139,97 +194,137 @@ export default function MechanicFound() {
 
   return (
     <>
-  {/* Top Status Header */}
-  <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-5 shadow-md">
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-xl font-semibold">
-          {estimatedTime ? `Arriving in ${estimatedTime} mins` : 'Calculating arrival time...'}
-        </h1>
-        <p className="text-sm opacity-90">Your mechanic is en route</p>
-      </div>
-      <div className="bg-white p-2 rounded-full text-green-600 shadow">
-        <Clock size={24} />
-      </div>
-    </div>
-  </div>
-
-  {/* Main Content */}
-  <div className="min-h-screen bg-gray-100 flex flex-col gap-4 p-4">
-
-    {/* Mechanic Info Card */}
-    <div className="bg-white rounded-2xl shadow-lg p-5 flex items-center gap-4">
-      {mechanic.Mechanic_profile_pic ? (
-        <img
-          src={mechanic.Mechanic_profile_pic}
-          alt="Mechanic"
-          className="w-16 h-16 rounded-full object-cover border-2 border-green-500"
-        />
-      ) : (
-        <User className="w-16 h-16 p-3 bg-gray-200 rounded-full text-green-600" />
-      )}
-      <div className="flex flex-col flex-grow">
-        <h3 className="text-lg font-bold">
-          {mechanic.first_name} {mechanic.last_name}
-        </h3>
-        <p className="text-sm text-gray-500">Verified Mechanic</p>
-      </div>
-      <button
-        onClick={handleCallMechanic}
-        className="flex items-center gap-2 bg-green-500 text-white px-3 py-2 rounded-xl hover:bg-green-600 text-sm"
-      >
-        <Phone size={16} />
-        <span className="hidden md:inline">{mechanic.phone_number}</span>
-      </button>
-    </div>
-
-    {/* ETA + Call */}
-    <div className="grid grid-cols-2 gap-4">
-      <div className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow">
-        <Clock className="text-green-600" />
-        <div>
-          <p className="font-semibold text-sm">
-            {estimatedTime ? `${estimatedTime} mins` : 'Calculating...'}
-          </p>
-          <p className="text-xs text-gray-500">ETA</p>
+      {/* Top Status Header */}
+      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-5 shadow-md">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold">
+              {estimatedTime ? `Arriving in ${estimatedTime} mins` : 'Calculating arrival time...'}
+            </h1>
+            <p className="text-sm opacity-90">Your mechanic is en route</p>
+          </div>
+          <div className="bg-white p-2 rounded-full text-green-600 shadow">
+            <Clock size={24} />
+          </div>
         </div>
       </div>
-      <button
-        onClick={handleCallMechanic}
-        className="flex items-center justify-center gap-2 p-4 bg-green-500 text-white rounded-2xl shadow hover:bg-green-600"
-      >
-        <Phone size={20} />
-        <span>Call Mechanic</span>
-      </button>
-    </div>
 
-    {/* Map Container */}
-    <div className="rounded-2xl overflow-hidden border shadow">
-      <div
-        ref={mapContainerRef}
-        className="w-full h-64 md:h-80"
-        style={{ minHeight: '360px' }}
-      />
-    </div>
-<AdBanner />
-    {/* Actions */}
-    <div className="flex flex-col gap-3 mt-4">
-      <button
-        onClick={handleGoHome}
-        className="w-full py-3 px-4 bg-white border border-gray-300 hover:bg-gray-100 rounded-xl font-semibold flex items-center justify-center gap-2 text-gray-800 shadow-sm"
-      >
-        <Home size={20} />
-        Back to Home
-      </button>
-      <button
-        onClick={handleGoHome}
-        className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-lg font-semibold flex items-center justify-center gap-2"
-      >
-        Cancel Request
-      </button>
-    </div>
-  </div>
-</>
+      {isCancelModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
+          <div className="bg-white w-full max-w-md mx-4 p-6 rounded-xl shadow-lg relative">
+            <h2 className="text-lg font-bold mb-4 text-gray-800">Why are you cancelling?</h2>
+
+            <div className="space-y-3">
+              {['Mechanic delayed', 'Changed my mind', 'Found help elsewhere', 'Other'].map((reason) => (
+                <div
+                  key={reason}
+                  className={`w-full px-4 py-2 rounded-lg border cursor-pointer transition ${selectedReason === reason
+                    ? 'bg-red-100 border-red-400 text-red-700'
+                    : 'border-gray-300 hover:bg-gray-100'
+                    }`}
+                  onClick={() => setSelectedReason(reason)}
+                >
+                  {reason}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setCancelModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!selectedReason}
+                onClick={handleCancelConfirm}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="min-h-screen bg-gray-100 flex flex-col gap-4 p-4">
+
+        {/* Mechanic Info Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-5 flex items-center gap-4">
+          {mechanic.Mechanic_profile_pic ? (
+            <img
+              src={mechanic.Mechanic_profile_pic}
+              alt="Mechanic"
+              className="w-16 h-16 rounded-full object-cover border-2 border-green-500"
+            />
+          ) : (
+            <User className="w-16 h-16 p-3 bg-gray-200 rounded-full text-green-600" />
+          )}
+          <div className="flex flex-col flex-grow">
+            <h3 className="text-lg font-bold">
+              {mechanic.first_name} {mechanic.last_name}
+            </h3>
+            <p className="text-sm text-gray-500">Verified Mechanic</p>
+          </div>
+          <button
+            onClick={handleCallMechanic}
+            className="flex items-center gap-2 bg-green-500 text-white px-3 py-2 rounded-xl hover:bg-green-600 text-sm"
+          >
+            <Phone size={16} />
+            <span className="hidden md:inline">{mechanic.phone_number}</span>
+          </button>
+        </div>
+
+        {/* ETA + Call */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow">
+            <Clock className="text-green-600" />
+            <div>
+              <p className="font-semibold text-sm">
+                {estimatedTime ? `${estimatedTime} mins` : 'Calculating...'}
+              </p>
+              <p className="text-xs text-gray-500">ETA</p>
+            </div>
+          </div>
+          <button
+            onClick={handleCallMechanic}
+            className="flex items-center justify-center gap-2 p-4 bg-green-500 text-white rounded-2xl shadow hover:bg-green-600"
+          >
+            <Phone size={20} />
+            <span>Call Mechanic</span>
+          </button>
+        </div>
+
+        {/* Map Container */}
+        <div className="rounded-2xl overflow-hidden border shadow">
+          <div
+            ref={mapContainerRef}
+            className="w-full h-64 md:h-80"
+            style={{ minHeight: '360px' }}
+          />
+        </div>
+        <AdBanner />
+        {/* Actions */}
+        <div className="flex flex-col gap-3 mt-4">
+          <button
+            onClick={handleGoHome}
+            className="w-full py-3 px-4 bg-white border border-gray-300 hover:bg-gray-100 rounded-xl font-semibold flex items-center justify-center gap-2 text-gray-800 shadow-sm"
+          >
+            <Home size={20} />
+            Back to Home
+          </button>
+          <button
+            onClick={() => setCancelModalOpen(true)}
+            className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-lg font-semibold flex items-center justify-center gap-2"
+          >
+            Cancel Request
+          </button>
+
+        </div>
+      </div>
+    </>
 
   );
 }

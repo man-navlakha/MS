@@ -58,7 +58,7 @@ export default function App() {
           {/* Routes that share the WebSocket connection */}
           <Route element={<Protected><RequestLayout /></Protected>}>
           <Route path="/finding/:request_id" element={<FindingMechanic />} />
-          <Route path="/mechanic-found" element={<MechanicFound />} />
+          <Route path="/mechanic-found/:request_id" element={<MechanicFound />} />
           </Route>
 
 
