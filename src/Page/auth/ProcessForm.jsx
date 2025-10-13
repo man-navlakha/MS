@@ -162,7 +162,7 @@ const ProcessForm = () => {
               <label className="text-gray-300">Phone Number</label>
               <PhoneInput
                 international
-                defaultCountry="US" // or your desired default country
+                defaultCountry="IN" // or your desired default country
                 value={formData.phone}
                 onChange={(value) => {
                   setFormData({ ...formData, phone: value });
@@ -229,12 +229,18 @@ const ProcessForm = () => {
               </h2>
               <div>
                 <label className="text-gray-300">Phone Number</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleChange("phone")}
-                  className="w-full mt-1 px-4 py-3 bg-white/20 rounded-lg border border-transparent focus:border-white/50 focus:ring-0 text-white placeholder-gray-300 focus:outline-none transition"
-                />
+                <PhoneInput
+                international
+                defaultCountry="IN" // or your desired default country
+                value={formData.phone}
+                onChange={(value) => {
+                  setFormData({ ...formData, phone: value });
+                  if (errors.phone) {
+                    setErrors({ ...errors, phone: "" });
+                  }
+                }}
+                className="w-full mt-1 px-4 py-3 bg-white/20 rounded-lg border border-transparent focus:border-white/50 focus:ring-0 text-white placeholder-gray-300 focus:outline-none transition"
+              />
                 {errors.phone && (
                   <p className="text-red-400 text-sm mt-1">{errors.phone}</p>
                 )}
