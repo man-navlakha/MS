@@ -128,8 +128,40 @@ export default function MechanicFound() {
   }, [mechanic, estimatedTime, mechanicLocation, request_id]);
 
   // Effect to handle incoming WebSocket messages
-  useEffect(() => {
-    if (!lastMessage) return;
+  // useEffect(() => {
+  //   if (!lastMessage) return;
+
+  //   console.log("WebSocket Message Received:", lastMessage);
+
+  //   switch (lastMessage.type) {
+  //     case 'mechanic_location_update':
+  //       setMechanicLocation({
+  //         lat: lastMessage.latitude,
+  //         lng: lastMessage.longitude,
+  //       });
+  //       break;
+  //     case 'eta_update':
+  //       setEstimatedTime(lastMessage.eta);
+  //       break;
+  //     case 'job_completed':
+  //       toast.success(lastMessage.message || "Your mechanic has completed the job.");
+  //       clearActiveJobData();
+  //       navigate('/');
+  //       break;
+  //     case 'job_cancelled_notification':
+  //     case 'job_cancelled':
+  //       toast.error(lastMessage.message || "The request has been cancelled.");
+  //       clearActiveJobData();
+  //       navigate('/');
+  //       break;
+  //     default:
+  //       // Do nothing for unknown message types
+  //       break;
+  //   }
+  // }, [lastMessage, navigate]);
+
+   useEffect(() => {
+    if (!lastMessage || lastMessage.request_id !== parseInt(request_id)) return;
 
     console.log("WebSocket Message Received:", lastMessage);
 
@@ -158,7 +190,7 @@ export default function MechanicFound() {
         // Do nothing for unknown message types
         break;
     }
-  }, [lastMessage, navigate]);
+  }, [lastMessage, navigate, request_id]);
 
   // Effect to send a heartbeat message periodically
   useEffect(() => {

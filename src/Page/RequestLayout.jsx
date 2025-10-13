@@ -1,11 +1,9 @@
+// src/Page/RequestLayout.jsx
+
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { WebSocketProvider } from '../context/WebSocketContext';
 
 export default function RequestLayout() {
-  return (
-    <WebSocketProvider>
-      <Outlet />
-    </WebSocketProvider>
-  );
+  // The WebSocketProvider is now handled globally in App.jsx
+  return <Outlet />;
 }

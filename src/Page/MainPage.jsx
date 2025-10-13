@@ -27,9 +27,14 @@ const MainPage = () => {
       const savedJobData = JSON.parse(localStorage.getItem(ACTIVE_JOB_STORAGE_KEY));
       if (savedJobData && savedJobData.request_id) {
         setActiveJob(savedJobData);
+      } else {
+        // **This is the fix**: Explicitly clear the activeJob state
+        setActiveJob(null);
       }
     } catch (error) {
       console.error("Failed to parse active job data from localStorage", error);
+      // Also clear on error to be safe
+      setActiveJob(null);
     }
   }, []);
 
