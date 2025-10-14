@@ -1,6 +1,6 @@
 // File: src/components/Navbar.jsx
 import React, { useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { Menu, X, User, LogIn, UserPlus, LogOut } from "lucide-react";
 
 export default function Navbar() {
@@ -8,55 +8,78 @@ export default function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
 
+  // This effect checks the token on mount and also listens for changes.
   useEffect(() => {
-    // Check for authentication token in localStorage
-    const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
+    const checkAuthStatus = () => {
+      const token = localStorage.getItem("token");
+      setIsAuthenticated(!!token);
+    };
+
+    // Check immediately on mount
+    checkAuthStatus();
+
+    // Listen for storage changes (e.g., login/logout in another tab)
+    window.addEventListener('storage', checkAuthStatus);
+
+    // This is a custom event to manually trigger a re-check from other components
+    window.addEventListener('authChange', checkAuthStatus);
+
+    // Cleanup listeners when component unmounts
+    return () => {
+      window.removeEventListener('storage', checkAuthStatus);
+      window.removeEventListener('authChange', checkAuthStatus);
+    };
   }, []);
+
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    setIsAuthenticated(false);
+    setIsAuthenticated(false); // Update state immediately
+    // Optional: Dispatch a custom event to notify other components like this one
+    window.dispatchEvent(new Event('authChange'));
     navigate("/login");
   };
 
-  const activeLinkStyle = {
-    color: '#3b82f6', // blue-600
-    fontWeight: '600',
-  };
+  // Use Tailwind classes for active links for consistency
+  const getActiveClassName = ({ isActive }) =>
+    isActive
+      ? "flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-600 font-semibold transition"
+      : "flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition";
 
-  const navLinks = 
+  // Define links based on authentication status
+  const authenticatedLinks = (
     <>
-      <NavLink to="/profile" style={({ isActive }) => isActive ? activeLinkStyle : undefined} className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
+      <NavLink to="/profile" className={getActiveClassName}>
         <User size={18} />
         Profile
       </NavLink>
-      <NavLink to="/logout"
-        className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
-        onClick={() => navigate("/logout")}
+      {/* Use a button for actions like logout */}
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition text-red-500"
       >
         <LogOut size={18} />
         Logout
-      </NavLink>
+      </button>
     </>
+  );
+
 
   return (
-    <header className="w-full fixed top-0 left-0 z-50 bg-white/80 backdrop-blur-md border-b-2 border-gray-900/30 rounded-b-3xl shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <div
-          className="flex items-center gap-3 cursor-pointer"
-          onClick={() => navigate("/")}
-        >
-          <img src="/ms.png" alt="Mechanic Setu Logo" className="w-19 h-19 -my-10" />
-          <h1 className="text-2xl font-bold text-gray-900 drop-shadow-sm">
+    <header className="w-full fixed top-0 left-0 z-50 bg-slate-200/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
+      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+        {/* Logo wrapped in a Link for proper navigation and accessibility */}
+        <Link to="/" className="flex items-center gap-3">
+          {/* Using standard Tailwind size classes and adjusted margin */}
+          <img src="/ms.png" alt="Mechanic Setu Logo" className="w-12 h-12" />
+          <h1 className="text-2xl font-bold text-gray-900">
             Mechanic Setu
           </h1>
-        </div>
+        </Link>
 
         {/* Desktop Menu */}
         <nav className="hidden md:flex items-center gap-2">
-          {navLinks}
+          {authenticatedLinks}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -72,9 +95,9 @@ export default function Navbar() {
 
       {/* Mobile Dropdown Menu */}
       {menuOpen && (
-        <nav className="md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-lg absolute w-full left-0 top-full">
+        <nav className="md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-lg">
           <div className="flex flex-col gap-1 p-4" onClick={() => setMenuOpen(false)}>
-            {navLinks}
+          {authenticatedLinks}
           </div>
         </nav>
       )}
