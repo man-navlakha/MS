@@ -5,6 +5,9 @@ import { useWebSocket } from '../context/WebSocketContext';
 import AdBanner from '../components/AdBanner';
 import api from '../utils/api';
 import { toast } from 'react-hot-toast';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+
 
 // Key for storing active job data in localStorage
 const ACTIVE_JOB_STORAGE_KEY = 'activeJobData';
@@ -127,39 +130,6 @@ export default function MechanicFound() {
     }
   }, [mechanic, estimatedTime, mechanicLocation, request_id]);
 
-  // Effect to handle incoming WebSocket messages
-  // useEffect(() => {
-  //   if (!lastMessage) return;
-
-  //   console.log("WebSocket Message Received:", lastMessage);
-
-  //   switch (lastMessage.type) {
-  //     case 'mechanic_location_update':
-  //       setMechanicLocation({
-  //         lat: lastMessage.latitude,
-  //         lng: lastMessage.longitude,
-  //       });
-  //       break;
-  //     case 'eta_update':
-  //       setEstimatedTime(lastMessage.eta);
-  //       break;
-  //     case 'job_completed':
-  //       toast.success(lastMessage.message || "Your mechanic has completed the job.");
-  //       clearActiveJobData();
-  //       navigate('/');
-  //       break;
-  //     case 'job_cancelled_notification':
-  //     case 'job_cancelled':
-  //       toast.error(lastMessage.message || "The request has been cancelled.");
-  //       clearActiveJobData();
-  //       navigate('/');
-  //       break;
-  //     default:
-  //       // Do nothing for unknown message types
-  //       break;
-  //   }
-  // }, [lastMessage, navigate]);
-
    useEffect(() => {
     if (!lastMessage || lastMessage.request_id !== parseInt(request_id)) return;
 
@@ -213,90 +183,85 @@ export default function MechanicFound() {
     }
   }, [socket, request_id]);
 
+useEffect(() => {
+  if (
+    !mapContainerRef.current ||
+    mapInstanceRef.current ||
+    !mechanicLocation || // wait until mechanic location is known
+    !userLocation         // wait until user location is known
+  ) return;
 
-  // Effect for initializing and loading the map SDK
-  useEffect(() => {
-    const loadMapSDK = () => {
-      if (window.maplibregl) {
-        initializeMap();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.js';
-      script.async = true;
-      script.onload = initializeMap;
-      document.head.appendChild(script);
+  const map = new maplibregl.Map({
+    container: mapContainerRef.current,
+    center: mechanicLocation,
+    zoom: 13,
+    style: `https://api.maptiler.com/maps/streets/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
+  });
 
-      const link = document.createElement('link');
-      link.href = 'https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.css';
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-    };
+  mapInstanceRef.current = map;
 
-    const initializeMap = () => {
-      if (!window.maplibregl || !mapContainerRef.current || mapInstanceRef.current) return;
-      const map = new window.maplibregl.Map({
-        container: mapContainerRef.current,
-        center: mechanicLocation || { lat: 28.6139, lng: 77.2090 }, // Default to a central location
-        zoom: 13,
-        style: `https://api.maptiler.com/maps/streets/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
-      });
-      map.on('load', trackUserLocation);
-      mapInstanceRef.current = map;
-    };
+  map.on('load', () => {
+    // User Marker
+    const userEl = document.createElement('img');
+    userEl.src = mechanic.Mechanic_profile_pic || '/ms.png';
+    userEl.style.width = '30px';
+    userEl.style.height = '30px';
+    userEl.style.borderRadius = '50%';
+    userEl.style.border = '2px solid #22c55e';
+    userEl.style.objectFit = 'cover';
 
-    const trackUserLocation = () => {
-      if (!navigator.geolocation) return toast.error("Geolocation is not supported by your browser.");
-      navigator.geolocation.watchPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => console.error("Location tracking error:", error),
-        { enableHighAccuracy: true }
-      );
-    };
+    userMarkerRef.current = new maplibregl.Marker(userEl)
+      .setLngLat([userLocation.lng, userLocation.lat])
+      .addTo(map);
 
-    loadMapSDK();
-  }, [mechanicLocation]); // Rerun if mechanic location is loaded from storage
+    // Mechanic Marker
+    const mechanicEl = document.createElement('img');
+    mechanicEl.src = '/ms.png';
+    mechanicEl.style.width = '30px';
+    mechanicEl.style.height = '30px';
+    mechanicEl.style.objectFit = 'contain';
+
+    mechanicMarkerRef.current = new maplibregl.Marker(mechanicEl)
+      .setLngLat([mechanicLocation.lng, mechanicLocation.lat])
+      .addTo(map);
+
+    fitMapToMarkers();
+  });
+
+}, [mechanicLocation, userLocation]); // ⬅️ Make sure both are ready
 
   // Effect for updating map markers and bounds
   useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !window.maplibregl) return;
+  const map = mapInstanceRef.current;
+  if (!map) return;
 
-    // Update user marker
-    if (userLocation) {
-      if (userMarkerRef.current) {
-        userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
-      } else {
-        userMarkerRef.current = new window.maplibregl.Marker({ color: 'blue' })
-          .setLngLat([userLocation.lng, userLocation.lat])
-          .addTo(map);
-      }
-    }
+  // Update user marker
+  if (userLocation && userMarkerRef.current) {
+    userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
+  }
 
-    // Update mechanic marker
-    if (mechanicLocation) {
-      if (mechanicMarkerRef.current) {
-        mechanicMarkerRef.current.setLngLat([mechanicLocation.lng, mechanicLocation.lat]);
-      } else {
-        mechanicMarkerRef.current = new window.maplibregl.Marker({ color: 'green' })
-          .setLngLat([mechanicLocation.lng, mechanicLocation.lat])
-          .addTo(map);
-      }
-    }
+  // Update mechanic marker
+  if (mechanicLocation && mechanicMarkerRef.current) {
+    mechanicMarkerRef.current.setLngLat([mechanicLocation.lng, mechanicLocation.lat]);
+  }
 
-    // Fit map bounds to show both markers
-    if (userLocation && mechanicLocation) {
-      const bounds = new window.maplibregl.LngLatBounds();
-      bounds.extend([userLocation.lng, userLocation.lat]);
-      bounds.extend([mechanicLocation.lng, mechanicLocation.lat]);
-      map.fitBounds(bounds, { padding: 80, maxZoom: 15 });
-    }
-  }, [userLocation, mechanicLocation]);
+  // Refit bounds
+  if (userLocation && mechanicLocation) {
+    fitMapToMarkers();
+  }
+
+}, [userLocation, mechanicLocation]);
+
+const fitMapToMarkers = () => {
+  const map = mapInstanceRef.current;
+  if (!map || !userLocation || !mechanicLocation) return;
+
+  const bounds = new maplibregl.LngLatBounds();
+  bounds.extend([userLocation.lng, userLocation.lat]);
+  bounds.extend([mechanicLocation.lng, mechanicLocation.lat]);
+
+  map.fitBounds(bounds, { padding: 80, maxZoom: 15 });
+};
 
 
   // --- Event Handlers ---
@@ -349,7 +314,7 @@ export default function MechanicFound() {
 
       <ConnectionStatus />
       {/* Top Status Header */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-5 shadow-md">
+      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 pt-15 -mt-10 -mx-3 py-5 shadow-md">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold">
