@@ -5,10 +5,8 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import LeftPanel from "../components/Leftpenal";
 import { ArrowRight } from 'lucide-react';
-
+import api from "../utils/api";
 // Key for storing active job data in localStorage (must match MechanicFound.jsx)
-const ACTIVE_JOB_STORAGE_KEY = 'activeJobData';
-
 const MainPage = () => {
   const navigate = useNavigate();
   const mapRef = useRef(null);
@@ -22,23 +20,80 @@ const MainPage = () => {
   const MAPPLS_KEY = "a645f44a39090467aa143b8da31f6dbd";
 
   // Check for an active job in localStorage when the component mounts
-   useEffect(() => {
-    try {
-      const savedJobData = JSON.parse(localStorage.getItem(ACTIVE_JOB_STORAGE_KEY));
-      // Set state ONLY if the data is valid
-      if (savedJobData && savedJobData.request_id) {
-        setActiveJob(savedJobData);
+useEffect(() => {
+    const checkForJobAndSync = async () => {
+      let jobIdFromStorage = null;
+
+      // First, check localStorage for an active job ID.
+      try {
+        const savedJobDataString = localStorage.getItem('activeJobData');
+        if (savedJobDataString) {
+          const savedJobData = JSON.parse(savedJobDataString);
+          if (savedJobData && savedJobData.request_id) {
+            jobIdFromStorage = savedJobData.request_id;
+          }
+        }
+      } catch (error) {
+        console.error("Could not parse job data from localStorage.", error);
+        localStorage.removeItem('activeJobData');
+      }
+
+      if (jobIdFromStorage) {
+        try {
+          console.log("Found job in localStorage, syncing with server...");
+          const { data } = await api.get("/jobs/SyncActiveJob/");
+          console.log("5. Received data from Sync API:", data);
+
+          if (data && data.message === 'No active job found.') {
+            console.log("Server confirms no active job. Clearing stale data.");
+            localStorage.removeItem('activeJobData');
+            setActiveJob(null);
+            return;
+          }
+
+          // Case 1: The user is a CUSTOMER with a PENDING job
+          if (data.status === 'PENDING' && data.job_id) {
+            console.log("Navigating: Customer, PENDING job.");
+            navigate(`/finding/${data.job_id}`);
+          
+          // Case 2: The user is a CUSTOMER with an ACCEPTED job (API sends mechanic details)
+          // We check for properties unique to the mechanic data (like `first_name` and `phone_number`)
+          // and crucially, we reuse the `jobIdFromStorage` we already have.
+          } else if (data.first_name && data.phone_number && !data.status) {
+            console.log("Navigating: Customer, ACCEPTED job.");
+            
+            const jobDataToStore = {
+              mechanic: data,
+              request_id: jobIdFromStorage, // Use the ID from localStorage
+              mechanicLocation: (data.current_latitude && data.current_longitude)
+                ? { lat: data.current_latitude, lng: data.current_longitude }
+                : null,
+              estimatedTime: null
+            };
+            
+            localStorage.setItem('activeJobData', JSON.stringify(jobDataToStore));
+
+            navigate(`/mechanic-found/${jobIdFromStorage}`, { // Use the ID from localStorage
+              state: { mechanic: data, requestId: jobIdFromStorage }
+            });
+
+          } else {
+             console.log("API response did not match any known navigation conditions.");
+          }
+        } catch (error) {
+          if (error.response?.status !== 401) {
+            console.error("Failed to sync active job with the server:", error);
+          }
+          setActiveJob(null);
+        }
       } else {
-        // Explicitly set to null if no valid data is found
+        console.log("No active job found in localStorage. Skipping API sync.");
         setActiveJob(null);
       }
-    } catch (error) {
-      console.error("Failed to parse active job data from localStorage", error);
-      // Also clear state on parsing error
-      setActiveJob(null);
-    }
-  }, []);
+    };
 
+    checkForJobAndSync();
+  }, [navigate]);
 
   // Load Mappls SDK
   useEffect(() => {
