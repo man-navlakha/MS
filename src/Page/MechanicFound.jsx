@@ -1,6 +1,8 @@
+// src/Page/MechanicFound.jsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { User, Clock, Phone, Home, Wifi, WifiOff, X } from 'lucide-react';
+import { User, Clock, Phone, Wifi, WifiOff, X } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import AdBanner from '../components/AdBanner';
 import api from '../utils/api';
@@ -47,8 +49,29 @@ export default function MechanicFound() {
   const neumorphicInsetShadow = "shadow-[inset_6px_6px_12px_#b8bec9,_inset_-6px_-6px_12px_#ffffff]";
   const buttonActiveShadow = `active:shadow-[inset_4px_4px_8px_#b8bec9,_inset_-4px_-4px_8px_#ffffff]`;
 
-
+  // Function to get initial state from either location or localStorage
   const getInitialState = () => {
+    // 1. Prioritize navigation state (if user just arrived)
+    if (location.state) {
+      // For Customer: mechanic details are passed directly
+      if (location.state.mechanic) {
+        return {
+          mechanic: location.state.mechanic,
+          jobDetails: null,
+          request_id: location.state.requestId || paramRequestId,
+        };
+      }
+      // For Mechanic: full job details are passed
+      if (location.state.jobDetails) {
+        return {
+          mechanic: location.state.jobDetails.assigned_mechanic,
+          jobDetails: location.state.jobDetails,
+          request_id: location.state.requestId || paramRequestId,
+        };
+      }
+    }
+
+    // 2. Fallback to localStorage (on page refresh)
     try {
       const savedJobData = JSON.parse(localStorage.getItem(ACTIVE_JOB_STORAGE_KEY));
       if (savedJobData && savedJobData.request_id === paramRequestId) {
@@ -57,25 +80,20 @@ export default function MechanicFound() {
     } catch (error) {
       console.error("Failed to parse job data from localStorage", error);
     }
-    return {
-      mechanic: location.state?.mechanic || null,
-      estimatedTime: location.state?.estimatedTime || null,
-      mechanicLocation: location.state?.mechanic
-        ? { lat: location.state.mechanic.current_latitude, lng: location.state.mechanic.current_longitude }
-        : null,
-      request_id: paramRequestId || null,
-    };
+
+    return { mechanic: null, jobDetails: null, request_id: paramRequestId };
   };
 
-  const [mechanic, setMechanic] = useState(getInitialState().mechanic);
-  const [estimatedTime, setEstimatedTime] = useState(getInitialState().estimatedTime);
-  const [mechanicLocation, setMechanicLocation] = useState(getInitialState().mechanicLocation);
-  const [request_id] = useState(paramRequestId || getInitialState().request_id);
-  const [userLocation, setUserLocation] = useState({ lat: 23.0225, lng: 72.5714 }); // Default to Ahmedabad
+  const [initialState] = useState(getInitialState());
+  const [mechanic, setMechanic] = useState(initialState.mechanic);
+  const [jobDetails] = useState(initialState.jobDetails);
+  const [estimatedTime, setEstimatedTime] = useState(initialState.estimatedTime || null);
+  const [mechanicLocation, setMechanicLocation] = useState(initialState.mechanicLocation || null);
+  const [userLocation, setUserLocation] = useState({ lat: 23.0225, lng: 72.5714 }); // Default
 
   const [isCancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedReason, setSelectedReason] = useState('');
-  const username = "test_user";
+  const username = "User"; // Replace with actual logged-in username
 
   const { socket, lastMessage } = useWebSocket();
   const mapContainerRef = useRef(null);
@@ -85,15 +103,18 @@ export default function MechanicFound() {
 
   const clearActiveJobData = () => localStorage.removeItem(ACTIVE_JOB_STORAGE_KEY);
 
+  // Persist state to localStorage whenever it changes
   useEffect(() => {
-    if (mechanic && request_id) {
-      const jobData = { mechanic, estimatedTime, mechanicLocation, request_id };
+    if (mechanic && paramRequestId) {
+      const jobData = { mechanic, jobDetails, estimatedTime, mechanicLocation, request_id: paramRequestId };
       localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, JSON.stringify(jobData));
     }
-  }, [mechanic, estimatedTime, mechanicLocation, request_id]);
+  }, [mechanic, jobDetails, estimatedTime, mechanicLocation, paramRequestId]);
 
+  // Handle WebSocket updates
   useEffect(() => {
-    if (!lastMessage || lastMessage.request_id !== parseInt(request_id)) return;
+    if (!lastMessage || lastMessage.request_id?.toString() !== paramRequestId) return;
+    
     switch (lastMessage.type) {
       case 'mechanic_location_update':
         setMechanicLocation({ lat: lastMessage.latitude, lng: lastMessage.longitude });
@@ -102,86 +123,76 @@ export default function MechanicFound() {
         setEstimatedTime(lastMessage.eta);
         break;
       case 'job_completed':
-        toast.success(lastMessage.message || "Job completed!");
-        clearActiveJobData();
-        navigate('/');
-        break;
       case 'job_cancelled':
-        toast.error(lastMessage.message || "The request was cancelled.");
+      case 'job_cancelled_notification':
+        toast.success(lastMessage.message || "The request has been resolved.");
         clearActiveJobData();
         navigate('/');
         break;
       default:
         break;
     }
-  }, [lastMessage, navigate, request_id]);
+  }, [lastMessage, navigate, paramRequestId]);
 
+  // Initialize and update the map
   useEffect(() => {
-    if (!mapContainerRef.current || mapInstanceRef.current || !mechanicLocation || !userLocation) return;
-    const map = new maplibregl.Map({
-      container: mapContainerRef.current,
-      center: [mechanicLocation.lng, mechanicLocation.lat],
-      zoom: 13,
-      style: `https://api.maptiler.com/maps/streets/style.json?key=wf1HtIzvVsvPfvNrhwPz`, // Replace with your key
-    });
-    mapInstanceRef.current = map;
+    if (!mapContainerRef.current || !mechanic) return;
+    if (!mapInstanceRef.current) {
+        const map = new maplibregl.Map({
+            container: mapContainerRef.current,
+            center: [mechanic.current_longitude, mechanic.current_latitude],
+            zoom: 13,
+            style: `https://api.maptiler.com/maps/streets/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
+        });
+        mapInstanceRef.current = map;
 
-    map.on('load', () => {
-      // User Marker
-      const userEl = document.createElement('div');
-      userEl.style.backgroundImage = 'url(/ms.png)'; // Replace with user icon if available
-      userEl.style.width = '35px';
-      userEl.style.height = '35px';
-      userEl.style.backgroundSize = '100%';
-      userEl.style.borderRadius = '50%';
-      userEl.style.border = '3px solid #10b981'; // green-600
-      userEl.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-      userMarkerRef.current = new maplibregl.Marker(userEl)
-        .setLngLat([userLocation.lng, userLocation.lat])
-        .addTo(map);
+        map.on('load', () => {
+            // User Marker
+            const userEl = document.createElement('img');
+            userEl.src = '/ms.png';
+            userEl.style.width = '35px';
+            userEl.style.height = '35px';
+            userEl.style.borderRadius = '50%';
+            userEl.style.border = '3px solid #10b981';
+            userMarkerRef.current = new maplibregl.Marker(userEl).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
 
-      // Mechanic Marker
-      const mechanicEl = document.createElement('img');
-      mechanicEl.src = mechanic.Mechanic_profile_pic || '/ms.png'; // Use mechanic's pic
-      mechanicEl.style.width = '35px';
-      mechanicEl.style.height = '35px';
-      mechanicEl.style.borderRadius = '50%';
-      mechanicEl.style.border = '3px solid #3b82f6'; // blue-500
-      mechanicEl.style.objectFit = 'cover';
-      mechanicEl.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-      mechanicMarkerRef.current = new maplibregl.Marker(mechanicEl)
-        .setLngLat([mechanicLocation.lng, mechanicLocation.lat])
-        .addTo(map);
+            // Mechanic Marker
+            const mechanicEl = document.createElement('img');
+            mechanicEl.src = mechanic.Mechanic_profile_pic || '/ms.png';
+            mechanicEl.style.width = '35px';
+            mechanicEl.style.height = '35px';
+            mechanicEl.style.objectFit = 'cover';
+            mechanicEl.style.borderRadius = '50%';
+            mechanicEl.style.border = '3px solid #3b82f6';
+            mechanicMarkerRef.current = new maplibregl.Marker(mechanicEl).setLngLat([mechanic.current_longitude, mechanic.current_latitude]).addTo(map);
 
-      fitMapToMarkers();
-    });
-  }, [mechanicLocation, userLocation, mechanic]);
-
-  useEffect(() => {
-    if (mechanicLocation && mechanicMarkerRef.current) {
-      mechanicMarkerRef.current.setLngLat([mechanicLocation.lng, mechanicLocation.lat]);
+            fitMapToMarkers();
+        });
     }
-    fitMapToMarkers();
-  }, [mechanicLocation]);
 
+    if (mechanicLocation && mechanicMarkerRef.current) {
+        mechanicMarkerRef.current.setLngLat([mechanicLocation.lng, mechanicLocation.lat]);
+        fitMapToMarkers();
+    }
+}, [mechanic, mechanicLocation, userLocation]);
 
-  const fitMapToMarkers = () => {
+const fitMapToMarkers = () => {
     const map = mapInstanceRef.current;
     if (!map || !userLocation || !mechanicLocation) return;
     const bounds = new maplibregl.LngLatBounds();
     bounds.extend([userLocation.lng, userLocation.lat]);
     bounds.extend([mechanicLocation.lng, mechanicLocation.lat]);
     map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 1000 });
-  };
-  
+};
+
   useEffect(() => {
-      // Fallback: If no mechanic data exists, redirect.
       const timer = setTimeout(() => {
           if (!mechanic) {
               toast.error("Could not find active job details.");
+              clearActiveJobData();
               navigate('/');
           }
-      }, 500);
+      }, 1000); // Allow a moment for state to settle
       return () => clearTimeout(timer);
   }, [mechanic, navigate]);
 
@@ -192,12 +203,10 @@ export default function MechanicFound() {
   };
 
   const handleCancelConfirm = async () => {
-    if (!selectedReason) {
-      toast.error("Please select a reason for cancellation.");
-      return;
-    }
+    if (!selectedReason) return toast.error("Please select a reason for cancellation.");
+    
     try {
-      await api.post(`jobs/CancelServiceRequest/${request_id}/`, {
+      await api.post(`jobs/CancelServiceRequest/${paramRequestId}/`, {
         cancellation_reason: `${username} - ${selectedReason}`,
       });
       clearActiveJobData();
@@ -241,7 +250,7 @@ export default function MechanicFound() {
           {/* Mechanic Info Card */}
           <div className={`${baseBg} rounded-3xl ${neumorphicShadow} p-5 flex items-center gap-4`}>
             <img
-              src={mechanic.Mechanic_profile_pic || '/default-user.png'}
+              src={mechanic.Mechanic_profile_pic || '/ms.png'}
               alt="Mechanic"
               className="w-16 h-16 rounded-full object-cover border-4 border-slate-200 shadow-md"
             />
