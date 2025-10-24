@@ -112,20 +112,31 @@ export default function MechanicFound() {
   }, [mechanic, jobDetails, estimatedTime, mechanicLocation, paramRequestId]);
 
   // Handle WebSocket updates
+  // Handle WebSocket updates
   useEffect(() => {
-    if (!lastMessage || lastMessage.request_id?.toString() !== paramRequestId) return;
+    if (!lastMessage) return;
+
+    // Handle location updates separately, as they are the most frequent.
     if (lastMessage.type === 'mechanic_location_update' && lastMessage.request_id?.toString() === paramRequestId) {
-        setMechanicLocation({ lat: lastMessage.latitude, lng: lastMessage.longitude });
-        return; // Message handled
+
+      // --- ADD THIS LINE TO LOG THE LOCATION ---
+      console.log(`[MechanicFound] Received location update for job ${paramRequestId}:`, {
+        lat: lastMessage.latitude,
+        lng: lastMessage.longitude
+      });
+      // --- END OF ADDITION ---
+
+      setMechanicLocation({ lat: lastMessage.latitude, lng: lastMessage.longitude });
+      return; // Message handled
     }
 
     // Handle other job-specific messages
     if (lastMessage.request_id?.toString() !== paramRequestId) {
-        // If it's not a location update AND not for this job, ignore it.
-        return;
+      // If it's not a location update AND not for this job, ignore it.
+      return;
     }
+
     switch (lastMessage.type) {
-    
       case 'eta_update':
         setEstimatedTime(lastMessage.eta);
         break;
@@ -137,70 +148,72 @@ export default function MechanicFound() {
         navigate('/');
         break;
       default:
+        // You can add a log here to see if any other messages are being ignored
+        // console.log('[MechanicFound] Ignored message type:', lastMessage.type);
         break;
     }
-  }, [lastMessage, navigate, paramRequestId]);
+  }, [lastMessage, navigate, paramRequestId]); // Make sure all dependencies are correct
 
   // Initialize and update the map
   useEffect(() => {
     if (!mapContainerRef.current || !mechanic) return;
     if (!mapInstanceRef.current) {
-        const map = new maplibregl.Map({
-            container: mapContainerRef.current,
-            center: [mechanic.current_longitude, mechanic.current_latitude],
-            zoom: 13,
-            style: `https://api.maptiler.com/maps/streets/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
-        });
-        mapInstanceRef.current = map;
+      const map = new maplibregl.Map({
+        container: mapContainerRef.current,
+        center: [mechanic.current_longitude, mechanic.current_latitude],
+        zoom: 13,
+        style: `https://api.maptiler.com/maps/streets/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
+      });
+      mapInstanceRef.current = map;
 
-        map.on('load', () => {
-            // User Marker
-            const userEl = document.createElement('img');
-            userEl.src = '/ms.png';
-            userEl.style.width = '35px';
-            userEl.style.height = '35px';
-            userEl.style.borderRadius = '50%';
-            userEl.style.border = '3px solid #10b981';
-            userMarkerRef.current = new maplibregl.Marker(userEl).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
+      map.on('load', () => {
+        // User Marker
+        const userEl = document.createElement('img');
+        userEl.src = '/ms.png';
+        userEl.style.width = '35px';
+        userEl.style.height = '35px';
+        userEl.style.borderRadius = '50%';
+        userEl.style.border = '3px solid #10b981';
+        userMarkerRef.current = new maplibregl.Marker(userEl).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
 
-            // Mechanic Marker
-            const mechanicEl = document.createElement('img');
-            mechanicEl.src = mechanic.Mechanic_profile_pic || '/ms.png';
-            mechanicEl.style.width = '35px';
-            mechanicEl.style.height = '35px';
-            mechanicEl.style.objectFit = 'cover';
-            mechanicEl.style.borderRadius = '50%';
-            mechanicEl.style.border = '3px solid #3b82f6';
-            mechanicMarkerRef.current = new maplibregl.Marker(mechanicEl).setLngLat([mechanic.current_longitude, mechanic.current_latitude]).addTo(map);
+        // Mechanic Marker
+        const mechanicEl = document.createElement('img');
+        mechanicEl.src = mechanic.Mechanic_profile_pic || '/ms.png';
+        mechanicEl.style.width = '35px';
+        mechanicEl.style.height = '35px';
+        mechanicEl.style.objectFit = 'cover';
+        mechanicEl.style.borderRadius = '50%';
+        mechanicEl.style.border = '3px solid #3b82f6';
+        mechanicMarkerRef.current = new maplibregl.Marker(mechanicEl).setLngLat([mechanic.current_longitude, mechanic.current_latitude]).addTo(map);
 
-            fitMapToMarkers();
-        });
+        fitMapToMarkers();
+      });
     }
 
     if (mechanicLocation && mechanicMarkerRef.current) {
-        mechanicMarkerRef.current.setLngLat([mechanicLocation.lng, mechanicLocation.lat]);
-        fitMapToMarkers();
+      mechanicMarkerRef.current.setLngLat([mechanicLocation.lng, mechanicLocation.lat]);
+      fitMapToMarkers();
     }
-}, [mechanic, mechanicLocation, userLocation]);
+  }, [mechanic, mechanicLocation, userLocation]);
 
-const fitMapToMarkers = () => {
+  const fitMapToMarkers = () => {
     const map = mapInstanceRef.current;
     if (!map || !userLocation || !mechanicLocation) return;
     const bounds = new maplibregl.LngLatBounds();
     bounds.extend([userLocation.lng, userLocation.lat]);
     bounds.extend([mechanicLocation.lng, mechanicLocation.lat]);
     map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 1000 });
-};
+  };
 
   useEffect(() => {
-      const timer = setTimeout(() => {
-          if (!mechanic) {
-              toast.error("Could not find active job details.");
-              clearActiveJobData();
-              navigate('/');
-          }
-      }, 1000); // Allow a moment for state to settle
-      return () => clearTimeout(timer);
+    const timer = setTimeout(() => {
+      if (!mechanic) {
+        toast.error("Could not find active job details.");
+        clearActiveJobData();
+        navigate('/');
+      }
+    }, 1000); // Allow a moment for state to settle
+    return () => clearTimeout(timer);
   }, [mechanic, navigate]);
 
   const handleCallMechanic = () => {
@@ -211,11 +224,22 @@ const fitMapToMarkers = () => {
 
   const handleCancelConfirm = async () => {
     if (!selectedReason) return toast.error("Please select a reason for cancellation.");
-    
+
     try {
       await api.post(`jobs/CancelServiceRequest/${paramRequestId}/`, {
         cancellation_reason: `${username} - ${selectedReason}`,
       });
+
+      // ADD THIS BLOCK
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        const cancelMessage = {
+          type: 'cancel_request',
+          request_id: parseInt(paramRequestId)
+        };
+        socket.send(JSON.stringify(cancelMessage));
+      }
+      // END OF ADDED BLOCK
+
       clearActiveJobData();
       toast.success("Service request cancelled.");
       navigate('/');
@@ -226,6 +250,8 @@ const fitMapToMarkers = () => {
       setCancelModalOpen(false);
     }
   };
+
+
 
   if (!mechanic) {
     return (
@@ -241,15 +267,15 @@ const fitMapToMarkers = () => {
       <div className={`min-h-screen ${baseBg} ${primaryTextColor} pt-28 font-sans`}>
         <div className="fixed top-0 left-0 right-0 z-10">
           <div className={`${baseBg} rounded-b-3xl p-5 ${neumorphicShadow} flex items-center justify-between`}>
-              <div>
-                  <h1 className="text-xl font-bold text-slate-800">
-                      {estimatedTime ? `Arriving in ${estimatedTime} mins` : 'Calculating ETA...'}
-                  </h1>
-                  <p className={`${secondaryTextColor} text-sm`}>Your mechanic is on the way</p>
-              </div>
-              <div className={`p-3 rounded-full ${neumorphicInsetShadow}`}>
-                  <Clock size={24} className="text-green-600" />
-              </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-800">
+                {estimatedTime ? `Arriving in ${estimatedTime} mins` : 'Calculating ETA...'}
+              </h1>
+              <p className={`${secondaryTextColor} text-sm`}>Your mechanic is on the way</p>
+            </div>
+            <div className={`p-3 rounded-full ${neumorphicInsetShadow}`}>
+              <Clock size={24} className="text-green-600" />
+            </div>
           </div>
         </div>
 
@@ -304,8 +330,8 @@ const fitMapToMarkers = () => {
                   key={reason}
                   onClick={() => setSelectedReason(reason)}
                   className={`w-full px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 font-medium ${selectedReason === reason
-                      ? `text-red-600 ${neumorphicInsetShadow}`
-                      : `${neumorphicShadow} hover:text-blue-600`
+                    ? `text-red-600 ${neumorphicInsetShadow}`
+                    : `${neumorphicShadow} hover:text-blue-600`
                     }`}
                 >
                   {reason}
