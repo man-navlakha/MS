@@ -65,8 +65,9 @@ export default function FindingMechanic() {
       });
       if (socket && socket.readyState === WebSocket.OPEN) {
         const cancelMessage = {
-          type: 'cancel_request',
-          request_id: parseInt(request_id)
+          type: 'job_cancelled',  // 1. Changed type to match what mechanic's app expects
+          job_id: request_id,       // 2. Changed key to 'job_id'
+          message: `Cancelled by user: ${selectedReason}` // 3. Added a message for the alert
         };
         socket.send(JSON.stringify(cancelMessage));
       }
