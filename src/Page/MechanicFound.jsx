@@ -114,11 +114,18 @@ export default function MechanicFound() {
   // Handle WebSocket updates
   useEffect(() => {
     if (!lastMessage || lastMessage.request_id?.toString() !== paramRequestId) return;
-    
-    switch (lastMessage.type) {
-      case 'mechanic_location_update':
+    if (lastMessage.type === 'mechanic_location_update' && lastMessage.request_id?.toString() === paramRequestId) {
         setMechanicLocation({ lat: lastMessage.latitude, lng: lastMessage.longitude });
-        break;
+        return; // Message handled
+    }
+
+    // Handle other job-specific messages
+    if (lastMessage.request_id?.toString() !== paramRequestId) {
+        // If it's not a location update AND not for this job, ignore it.
+        return;
+    }
+    switch (lastMessage.type) {
+    
       case 'eta_update':
         setEstimatedTime(lastMessage.eta);
         break;
