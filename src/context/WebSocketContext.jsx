@@ -41,6 +41,8 @@ export const WebSocketProvider = ({ children }) => {
           console.log('%c[WS-PROVIDER] ==> Connection successful!', 'color: #008000; font-weight: bold;');
           setConnectionStatus('connected');
           setSocket(ws.current);
+
+          
         };
 
         ws.current.onmessage = (event) => {

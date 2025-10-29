@@ -37,18 +37,42 @@ export default function FindingMechanic() {
     }
   }, [socket, connectionStatus, request_id]);
 
-  // Mechanic accepted message handler
-  useEffect(() => {
-    if (lastMessage?.type === 'mechanic_accepted') {
-      navigate(`/mechanic-found/${request_id}/`, {
-        state: {
-          mechanic: lastMessage.mechanic_details,
-          estimatedTime: lastMessage.estimated_arrival_time,
-          requestId: request_id
-        }
-      });
+ useEffect(() => {
+    if (!lastMessage || lastMessage.request_id?.toString() !== request_id) {
+      // Ignore messages not for this request
+      return;
     }
-  }, [lastMessage, navigate, request_id]);
+
+    switch (lastMessage.type) {
+      case 'mechanic_accepted':
+        // Navigate to MechanicFound page
+        navigate(`/mechanic-found/${request_id}/`, {
+          state: {
+            mechanic: lastMessage.mechanic_details,
+            estimatedTime: lastMessage.estimated_arrival_time,
+            requestId: request_id
+          }
+        });
+        break;
+
+      // ✨ ADD THIS CASE ✨
+      case 'no_mechanic_found':
+        toast.error(lastMessage.message || 'We could not find an available mechanic.');
+        // Optionally clear any local state related to the search if needed
+        localStorage.removeItem('activeJobData'); // Clear potentially stale data just in case
+        navigate('/'); // Navigate back home or to a relevant page
+        break;
+      // END OF ADDITION
+
+      // You might add other cases here if needed, like 'search_update', etc.
+
+      default:
+        // Optional: Log ignored message types relevant to this request ID
+        console.log('[FindingMechanic] Ignored message type for this request:', lastMessage.type);
+        break;
+    }
+
+  }, [lastMessage, navigate, request_id]); // Dependencies for the message handler
 
   const handleCancel = () => {
     setCancelModalOpen(true);

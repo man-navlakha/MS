@@ -147,6 +147,10 @@ export default function MechanicFound() {
         clearActiveJobData();
         navigate('/');
         break;
+      case 'no_mechanic_found':
+        toast.success(lastMessage.message || "The request has been resolved.");
+        navigate('/');
+        break;
       default:
         // You can add a log here to see if any other messages are being ignored
         // console.log('[MechanicFound] Ignored message type:', lastMessage.type);
