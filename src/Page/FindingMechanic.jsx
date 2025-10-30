@@ -47,7 +47,7 @@ export default function FindingMechanic() {
     switch (lastMessage.type) {
       case 'mechanic_accepted':
         // Navigate to MechanicFound page
-        console.log("run")
+        console.log(lastMessage)
         navigate(`/mechanic-found/${request_id}/`, {
           state: {
             mechanic: lastMessage.mechanic_details,

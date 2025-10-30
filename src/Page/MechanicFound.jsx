@@ -88,8 +88,8 @@ export default function MechanicFound() {
   const [mechanic, setMechanic] = useState(initialState.mechanic);
   const [jobDetails] = useState(initialState.jobDetails);
   const [estimatedTime, setEstimatedTime] = useState(initialState.estimatedTime || null);
-  const [mechanicLocation, setMechanicLocation] = useState(initialState.mechanicLocation || null);
-  const [userLocation, setUserLocation] = useState({ lat: 23.0225, lng: 72.5714 }); // Default
+  const [mechanicLocation, setMechanicLocation] = useState(initialState.mechanic.current_latitude + "," + initialState.mechanic.current_latitude || null);
+  const [userLocation, setUserLocation] = useState("");
 
   const [isCancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedReason, setSelectedReason] = useState('');
