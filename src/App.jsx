@@ -16,22 +16,15 @@ import ProfilePage from "./Page/ProfilePage";
 import MechanicFound from './Page/MechanicFound';
 import RequestLayout from './Page/RequestLayout';
 import FindingMechanic from './Page/FindingMechanic';
-
-// Component Imports
 import Protected from './ProtectedRoute';
 import { WebSocketProvider, useWebSocket } from './context/WebSocketContext';
 
-/**
- * A new component that listens for global WebSocket messages
- * and handles critical state changes, like clearing a completed job.
- */
 const GlobalSocketHandler = () => {
   const { lastMessage } = useWebSocket();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    // Only act if there's a new message
     if (!lastMessage) return;
 
     const jobFinishedOrNotFound = lastMessage.type === 'job_completed' || lastMessage.type === 'job_cancelled' || lastMessage.type === 'job_cancelled_notification' || lastMessage.type === 'no_mechanic_found';
@@ -44,32 +37,19 @@ const GlobalSocketHandler = () => {
       } else {
         toast.success(lastMessage.message || 'The request has been resolved.');
       }
-
-      // Clear the state from localStorage
       localStorage.removeItem('activeJobData');
-
-      // Check if the user is currently on a page related to the job finding/tracking process
       const isOnJobRelatedPage = location.pathname.startsWith('/finding/') || location.pathname.startsWith('/mechanic-found/');
-
-      // If on a job-related page OR the main page, navigate/reload.
-      // Otherwise, stay on the current page (e.g., profile) but the job state is cleared.
      if (location.pathname === '/' || isOnJobRelatedPage) {
         // ✨ ADDED setTimeout ✨
         const timerId = setTimeout(() => {
-          // If they are on the main page, reload to clear banners/state derived from localStorage
           if (location.pathname === '/') {
             window.location.reload();
           } else {
-            // If they are on /finding/* or /mechanic-found/*, navigate them home
             navigate('/');
           }
-      }, 5000); // 5000 milliseconds = 5 seconds
-
-        // Optional: Cleanup the timer if the component unmounts or lastMessage changes before 5 seconds
+      }, 5000);
         return () => clearTimeout(timerId);
-        // ✨ END of setTimeout addition ✨
       }
-      // If they are on another page (like /profile), the localStorage is cleared. No forced navigation needed.
     }
   }, [lastMessage, navigate, location.pathname]);
 

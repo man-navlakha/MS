@@ -1,6 +1,5 @@
 // PunctureRequestFormRedesigned.jsx
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,14 +17,12 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import { toast } from 'react-hot-toast';
-import maplibregl from 'maplibre-gl';
+import PlacePickerGujarat from '../components/PlacePickerGujarat'; // Import the updated component
 
 // Main Component
 export default function PunctureRequestFormRedesigned() {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
-    const [loadingLocation, setLoadingLocation] = useState(false);
-    const [mapStatus, setMapStatus] = useState("idle");
     const [formData, setFormData] = useState({
         vehicleType: '',
         location: '',
@@ -34,10 +31,6 @@ export default function PunctureRequestFormRedesigned() {
         problem: '',
         additionalNotes: ''
     });
-
-    const mapContainerRef = useRef(null);
-    const mapInstanceRef = useRef(null);
-    const MAPPLS_KEY = "a645f44a39090467aa143b8da31f6dbd";
 
     const vehicleTypes = [
         { id: 'bike', name: 'Bike/Scooter', icon: Bike },
@@ -65,118 +58,15 @@ export default function PunctureRequestFormRedesigned() {
             { name: 'Tire Replacement', icon: '⚙️' },
         ],
     };
-    useEffect(() => {
-        if (step !== 2) return;
 
-        if (!mapContainerRef.current || mapInstanceRef.current) return;
-
-        const defaultCenter = [77.2090, 28.6139]; // Delhi default (lng, lat)
-
-        const map = new maplibregl.Map({
-            container: mapContainerRef.current,
-            center: defaultCenter,
-            zoom: 13,
-            style: 'https://api.maptiler.com/maps/streets/style.json?key=wf1HtIzvVsvPfvNrhwPz',
-        });
-
-        map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-        map.on('load', () => {
-            setMapStatus("loaded");
-        });
-
-        map.on('error', () => {
-            setMapStatus("error");
-        });
-
-        map.on('click', async (e) => {
-            const { lng, lat } = e.lngLat;
-
-            setFormData(prev => ({
-                ...prev,
-                latitude: lat,
-                longitude: lng,
-                location: "Fetching address..."
-            }));
-
-            // Add or update marker
-            if (mapInstanceRef.current?.marker) {
-                mapInstanceRef.current.marker.setLngLat([lng, lat]);
-            } else {
-                const marker = new maplibregl.Marker().setLngLat([lng, lat]).addTo(map);
-                mapInstanceRef.current.marker = marker;
-            }
-
-            // Reverse geocode
-            const address = await getAddressFromCoordinates(lat, lng);
-            setFormData(prev => ({ ...prev, location: address }));
-        });
-
-        mapInstanceRef.current = map;
-
-        return () => {
-            map.remove();
-            mapInstanceRef.current = null;
-        };
-    }, [step]);
-
-
-    const getAddressFromCoordinates = async (lat, lng) => {
-        try {
-            const mapplsResponse = await fetch(`https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/rev_geocode?lat=${lat}&lng=${lng}`);
-            if (mapplsResponse.ok) {
-                const data = await mapplsResponse.json();
-                if (data?.results?.[0]?.formatted_address) {
-                    return data.results[0].formatted_address;
-                }
-            }
-        } catch (error) {
-            console.error("Mappls geocoding error:", error);
-        }
-        return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    };
-
-    const getUserLocation = async () => {
-        if (!navigator.geolocation) {
-            toast.error("Geolocation is not supported by your browser.");
-            return;
-        }
-
-        setLoadingLocation(true);
-
-        try {
-            const position = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                });
-            });
-
-            const { latitude, longitude, accuracy } = position.coords;
-            const pos = { lat: latitude, lng: longitude };
-
-            setFormData(prev => ({ ...prev, latitude, longitude, location: "Fetching address..." }));
-
-            const address = await getAddressFromCoordinates(latitude, longitude);
-            setFormData(prev => ({ ...prev, location: address }));
-
-            if (mapStatus === 'loaded' && mapInstanceRef.current && window.mappls) {
-                mapInstanceRef.current.setCenter(pos);
-                new window.mappls.Marker({ map: mapInstanceRef.current, position: pos });
-                new window.mappls.Circle({ map: mapInstanceRef.current, center: pos, radius: accuracy });
-            }
-
-        } catch (error) {
-            setFormData(prev => ({ ...prev, location: "" }));
-            toast.error("Could not get your location. Please enable location services or enter your address manually.");
-        } finally {
-            setLoadingLocation(false);
-        }
-    };
-
-    const handleManualLocationChange = (e) => {
-        setFormData(prev => ({ ...prev, location: e.target.value, latitude: null, longitude: null }));
+    // Handler for location updates from PlacePickerGujarat
+    const handleLocationChange = ({ address, latitude, longitude }) => {
+        setFormData(prev => ({
+            ...prev,
+            location: address,
+            latitude: latitude,
+            longitude: longitude
+        }));
     };
 
     const handleNext = () => step < 3 && setStep(step + 1);
@@ -208,7 +98,6 @@ export default function PunctureRequestFormRedesigned() {
         }
     };
 
-
     const canProceed = () => {
         if (step === 1) return !!formData.vehicleType;
         if (step === 2) return formData.location.trim() !== '' && formData.location !== "Fetching address...";
@@ -233,31 +122,31 @@ export default function PunctureRequestFormRedesigned() {
     );
 
     const Step2_Location = () => (
-        <StepWrapper title="Confirm Your Location">
+        <StepWrapper title="Confirm Your Location in Gujarat">
             <div className="space-y-4">
-                <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Enter address manually"
-                        value={formData.location}
-                        onChange={handleManualLocationChange}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-200 text-gray-700 rounded-xl shadow-[inset_2px_2px_5px_#BABECC,inset_-5px_-5px_10px_#FFFFFF] outline-none focus:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition"
-                    />
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-800">
+                        🗺️ <strong>Powered by MapMyIndia:</strong> Get accurate location search and addressing for Gujarat region
+                    </p>
                 </div>
-                <button
-                    onClick={getUserLocation}
-                    disabled={loadingLocation}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] font-semibold hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition disabled:opacity-50"
-                >
-                    {loadingLocation ? <Loader className="animate-spin" size={20} /> : <Navigation size={20} />}
-                    {loadingLocation ? "Fetching Location..." : "Use My Current Location"}
-                </button>
-                <div className="relative h-64 md:h-80 w-full bg-gray-200 rounded-lg shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] overflow-hidden">
-                    {(mapStatus === 'loading' || mapStatus === 'idle') && <MapOverlay icon={Loader} text="Loading Map..." spin />}
-                    {mapStatus === 'error' && <MapOverlay icon={CircleHelp} text="Map failed to load." />}
-                    <div ref={mapContainerRef} className="w-full h-full" />
-                </div>
+
+                {/* Integrated PlacePicker with Mappls Search */}
+                <PlacePickerGujarat
+                    value={{
+                        address: formData.location,
+                        latitude: formData.latitude,
+                        longitude: formData.longitude
+                    }}
+                    onChange={handleLocationChange}
+                />
+
+                {/* Display selected location info */}
+                {formData.latitude && formData.longitude && (
+                    <div className="p-3 bg-gray-100 rounded-lg text-sm text-gray-600">
+                        <p><strong>Selected Location:</strong> {formData.location}</p>
+                        <p><strong>Coordinates:</strong> {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}</p>
+                    </div>
+                )}
             </div>
         </StepWrapper>
     );
@@ -336,6 +225,9 @@ export default function PunctureRequestFormRedesigned() {
         </div>
     );
 }
+
+// Keep all your existing helper components (StepWrapper, SelectableCard, ProgressStepper)
+// They remain exactly the same
 
 // Helper components with neumorphic design
 const StepWrapper = ({ title, children }) => (
