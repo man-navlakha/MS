@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import { MapPin, Loader2, Search, Navigation, Crosshair } from 'lucide-react';
+import { Loader2, Navigation, Crosshair } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -32,12 +32,12 @@ const LocationMarker = ({ position, setPosition }) => {
   const map = useMapEvents({
     click(e) {
       const { lat, lng } = e.latlng;
-      setPosition(lat, lng);
+      setPosition(lat, lng, null); // Pass null for displayName to trigger reverse geocode
       map.flyTo([lat, lng], map.getZoom());
     },
     locationfound(e) {
       const { lat, lng } = e.latlng;
-      setPosition(lat, lng);
+      setPosition(lat, lng, null); // Pass null for displayName to trigger reverse geocode
       map.flyTo([lat, lng], map.getZoom());
     },
   });
@@ -57,7 +57,7 @@ const LocationMarker = ({ position, setPosition }) => {
         dragend: (e) => {
           const marker = e.target;
           const { lat, lng } = marker.getLatLng();
-          setPosition(lat, lng);
+          setPosition(lat, lng, null); // Pass null for displayName to trigger reverse geocode
         },
       }}
     />
@@ -65,13 +65,8 @@ const LocationMarker = ({ position, setPosition }) => {
 };
 
 const PlacePickerGujarat = ({ value = {}, onChange }) => {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
-  const [typingTimeout, setTypingTimeout] = useState(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
   const [locationError, setLocationError] = useState('');
-  const [usingMappls, setUsingMappls] = useState(true);
 
   // Initialize position with proper fallback and validation
   const getInitialPosition = () => {
@@ -102,102 +97,10 @@ const PlacePickerGujarat = ({ value = {}, onChange }) => {
 
     if (addr && addr !== address) {
       setAddress(addr);
-      setQuery(addr);
     }
   }, [value]);
 
-  // **CORRECTED Mappls Search Function**
-  // This now uses the "Advanced Maps" (geo_code) API which works with your static MAPPLS_KEY.
-  const searchPlacesWithMappls = async (q) => {
-    if (!q || q.length < 3) {
-      setResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    setUsingMappls(true);
-
-    try {
-      // Use the Mappls API endpoint that works with the static key
-      const response = await fetch(
-        `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/geo_code?address=${encodeURIComponent(q)}&filter=country:IND`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Mappls search successful (geo_code):', data);
-        
-        // This API returns a 'results' array
-        if (data.results && data.results.length > 0) {
-          
-          // Client-side filter for Gujarat, as the API filter is not always strict
-          const gujaratResults = data.results.filter(place => 
-            (place.state && place.state.toLowerCase() === 'gujarat') ||
-            (place.formattedAddress && place.formattedAddress.toLowerCase().includes('gujarat'))
-          );
-
-          if (gujaratResults.length > 0) {
-              setResults(gujaratResults);
-          } else {
-              console.log('No Gujarat results from Mappls, trying OSM...');
-              await searchPlacesWithOSM(q);
-          }
-        } else {
-          console.log('No results from Mappls, trying OSM...');
-          await searchPlacesWithOSM(q);
-        }
-      } else {
-        console.warn('Mappls API (geo_code) returned error, falling back to OSM:', response.status);
-        await searchPlacesWithOSM(q);
-      }
-    } catch (error) {
-      console.warn('Mappls search (geo_code) failed, falling back to OSM:', error);
-      await searchPlacesWithOSM(q); // Fallback on catch
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // OpenStreetMap Search (Fallback)
-  const searchPlacesWithOSM = async (q) => {
-    try {
-      const viewbox = '68.0,24.7,74.5,20.0'; // Gujarat bounding box
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ' Gujarat')}&format=json&countrycodes=in&viewbox=${viewbox}&bounded=1&limit=8`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        setResults(data);
-        setUsingMappls(false);
-      } else {
-        throw new Error('OSM search failed');
-      }
-    } catch (error) {
-      console.error('OSM search error:', error);
-      setLocationError('Failed to search locations. Please check your connection.');
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const val = e.target.value;
-    setQuery(val);
-    if (typingTimeout) clearTimeout(typingTimeout);
-    
-    if (val.length >= 3) {
-      setTypingTimeout(setTimeout(() => searchPlacesWithMappls(val), 800));
-    } else {
-      setResults([]);
-    }
-  };
-
-  // Mappls Reverse Geocoding (This was already correct)
+  // Mappls Reverse Geocoding
   const reverseGeocodeWithMappls = async (lat, lon) => {
     try {
       const response = await fetch(
@@ -252,7 +155,6 @@ const PlacePickerGujarat = ({ value = {}, onChange }) => {
     }
 
     setAddress(finalAddress);
-    setQuery(finalAddress);
 
     if (onChange) {
       onChange({
@@ -262,37 +164,7 @@ const PlacePickerGujarat = ({ value = {}, onChange }) => {
       });
     }
 
-    setResults([]);
     setLocationError('');
-  };
-
-  const handleSelect = (place) => {
-    let lat, lon, placeName;
-    
-    // Handle Mappls format (from Autosuggest - not used here but good to keep)
-    if (place.latitude !== undefined && place.longitude !== undefined) {
-      lat = parseFloat(place.latitude);
-      lon = parseFloat(place.longitude);
-      placeName = place.place_name || place.formatted_address || place.address;
-    }  
-    // Handle OSM format
-    else if (place.lat && place.lon && place.display_name) {
-      lat = parseFloat(place.lat);
-      lon = parseFloat(place.lon);
-      placeName = place.display_name;
-    }
-    // Handle Mappls geo_code format (This is the one we are using)
-    else if (place.lat !== undefined && place.lon !== undefined) {
-      lat = parseFloat(place.lat);
-      lon = parseFloat(place.lon);
-      placeName = place.formattedAddress || place.address;
-    }
-    else {
-      console.error('Unknown place format:', place);
-      return;
-    }
-    
-    updatePosition(lat, lon, placeName);
   };
 
   const detectLocation = () => {
@@ -328,105 +200,13 @@ const PlacePickerGujarat = ({ value = {}, onChange }) => {
     );
   };
 
-  const clearSearch = () => {
-    setQuery('');
-    setResults([]);
-  };
-
-  // Format result display based on data source
-  const getPlaceDisplayName = (place) => {
-    // Mappls geo_code format
-    if (place.formattedAddress) return place.formattedAddress.split(',')[0];
-    // Mappls Autosuggest format
-    if (place.place_name) return place.place_name;
-    if (place.address) return place.address.split(',')[0];
-    
-    // OSM format
-    if (place.display_name) return place.display_name.split(',')[0];
-    
-    return 'Unknown location';
-  };
-
-  const getPlaceAddress = (place) => {
-    // Mappls geo_code format
-    if (place.formattedAddress) return place.formattedAddress.split(',').slice(1).join(',');
-    // Mappls Autosuggest format
-    if (place.address) return place.address;
-    
-    // OSM format
-    if (place.display_name) return place.display_name.split(',').slice(1).join(',');
-    
-    return '';
-  };
-
   // Safe position access with fallback
   const safePosition = position || [23.0225, 72.5714];
   const safeAddress = address || 'No location selected';
 
   return (
     <div className="w-full space-y-4">
-      {/* Search Section */}
-      <div className="space-y-3">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-sm text-blue-800">
-            {usingMappls ? '🔍' : '🗺️'} <strong>
-              {usingMappls ? 'Powered by MapMyIndia' : 'Using OpenStreetMap'}
-            </strong>: Search for locations in Gujarat
-          </p>
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search locations in Gujarat (e.g., Gandhi Market, Surat)"
-            value={query}
-            onChange={handleInputChange}
-            className="w-full pl-10 pr-10 py-3 bg-gray-200 text-gray-700 rounded-xl shadow-[inset_2px_2px_5px_#BABECC,inset_-5px_-5px_10px_#FFFFFF] outline-none focus:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition"
-          />
-          {query && (
-            <button
-              onClick={clearSearch}
-              className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
-            >
-              ×
-            </button>
-          )}
-        </div>
-
-        {/* Search Results */}
-        {results.length > 0 && (
-          <div className="bg-gray-200 rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] overflow-hidden">
-            <div className="max-h-32 overflow-y-auto space-y-1 p-2">
-              {results.map((place, index) => (
-                <div
-                  key={place.place_id || place.eLoc || place.osm_id || index}
-                  className="p-2 rounded-md hover:bg-gray-300 cursor-pointer transition-colors"
-                  onClick={() => handleSelect(place)}
-                >
-                  <div className="font-medium text-sm flex items-start">
-                    <MapPin className="h-3 w-3 mt-1 mr-2 flex-shrink-0" />
-                    <span>{getPlaceDisplayName(place)}</span>
-                  </div>
-                  <div className="text-xs text-gray-600 truncate ml-5">
-                    {getPlaceAddress(place)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {isSearching && (
-          <div className="flex items-center justify-center py-2">
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            <span className="text-sm text-gray-600">
-              {usingMappls ? 'Searching with MapMyIndia...' : 'Searching with OpenStreetMap...'}
-            </span>
-          </div>
-        )}
-      </div>
-
+      
       {/* Map Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -451,6 +231,13 @@ const PlacePickerGujarat = ({ value = {}, onChange }) => {
           </MapContainer>
         </div>
       </div>
+
+      {/* Selected Location Display */}
+      {address && (
+          <div className="p-3 bg-gray-100 rounded-lg text-sm text-gray-600">
+              <p><strong>Selected Location:</strong> {address}</p>
+          </div>
+      )}
 
       {/* Location Error */}
       {locationError && (
