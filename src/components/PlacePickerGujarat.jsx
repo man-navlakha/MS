@@ -232,12 +232,12 @@ const PlacePickerGujarat = ({ value = {}, onChange }) => {
         </div>
       </div>
 
-      {/* Selected Location Display */}
+      {/* Selected Location Display
       {address && (
           <div className="p-3 bg-gray-100 rounded-lg text-sm text-gray-600">
               <p><strong>Selected Location:</strong> {address}</p>
           </div>
-      )}
+      )} */}
 
       {/* Location Error */}
       {locationError && (

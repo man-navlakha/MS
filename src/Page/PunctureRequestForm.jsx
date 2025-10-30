@@ -19,7 +19,37 @@ import api from '../utils/api';
 import { toast } from 'react-hot-toast';
 import PlacePickerGujarat from '../components/PlacePickerGujarat'; // Import the updated component
 
-// Main Component
+// --- CONSTANTS ---
+// Moved outside the component so they are not re-declared on render
+const vehicleTypes = [
+    { id: 'bike', name: 'Bike/Scooter', icon: Bike },
+    { id: 'car', name: 'Car / Sedan', icon: Car },
+    { id: 'truck', name: 'Truck / SUV', icon: Truck }
+];
+
+const problems = {
+    bike: [
+        { name: 'Puncture Repair', icon: '🔧' },
+        { name: 'Air Fill-up', icon: '💨' },
+        { name: 'Chain Repair', icon: '🔗' },
+        { name: 'Spark Plug Issue', icon: '⚡' },
+    ],
+    car: [
+        { name: 'Puncture Repair', icon: '🔧' },
+        { name: 'Air Fill-up', icon: '💨' },
+        { name: 'Battery Jumpstart', icon: '🔋' },
+        { name: 'Tire Replacement', icon: '⚙️' },
+    ],
+    truck: [
+        { name: 'Puncture Repair', icon: '🔧' },
+        { name: 'Air Fill-up', icon: '💨' },
+        { name: 'Battery Jumpstart', icon: '🔋' },
+        { name: 'Tire Replacement', icon: '⚙️' },
+    ],
+};
+
+
+// --- MAIN COMPONENT ---
 export default function PunctureRequestFormRedesigned() {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
@@ -31,33 +61,6 @@ export default function PunctureRequestFormRedesigned() {
         problem: '',
         additionalNotes: ''
     });
-
-    const vehicleTypes = [
-        { id: 'bike', name: 'Bike/Scooter', icon: Bike },
-        { id: 'car', name: 'Car / Sedan', icon: Car },
-        { id: 'truck', name: 'Truck / SUV', icon: Truck }
-    ];
-
-    const problems = {
-        bike: [
-            { name: 'Puncture Repair', icon: '🔧' },
-            { name: 'Air Fill-up', icon: '💨' },
-            { name: 'Chain Repair', icon: '🔗' },
-            { name: 'Spark Plug Issue', icon: '⚡' },
-        ],
-        car: [
-            { name: 'Puncture Repair', icon: '🔧' },
-            { name: 'Air Fill-up', icon: '💨' },
-            { name: 'Battery Jumpstart', icon: '🔋' },
-            { name: 'Tire Replacement', icon: '⚙️' },
-        ],
-        truck: [
-            { name: 'Puncture Repair', icon: '🔧' },
-            { name: 'Air Fill-up', icon: '💨' },
-            { name: 'Battery Jumpstart', icon: '🔋' },
-            { name: 'Tire Replacement', icon: '⚙️' },
-        ],
-    };
 
     // Handler for location updates from PlacePickerGujarat
     const handleLocationChange = ({ address, latitude, longitude }) => {
@@ -105,74 +108,7 @@ export default function PunctureRequestFormRedesigned() {
         return false;
     };
 
-    const Step1_Vehicle = () => (
-        <StepWrapper title="Select Your Vehicle">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {vehicleTypes.map(vehicle => (
-                    <SelectableCard
-                        key={vehicle.id}
-                        label={vehicle.name}
-                        icon={vehicle.icon}
-                        isSelected={formData.vehicleType === vehicle.id}
-                        onClick={() => setFormData({ ...formData, vehicleType: vehicle.id, problem: '' })}
-                    />
-                ))}
-            </div>
-        </StepWrapper>
-    );
-
-    const Step2_Location = () => (
-        <StepWrapper title="Confirm Your Location in Gujarat">
-            <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-sm text-blue-800">
-                        🗺️ <strong>Powered by MapMyIndia:</strong> Get accurate location search and addressing for Gujarat region
-                    </p>
-                </div>
-
-                {/* Integrated PlacePicker with Mappls Search */}
-                <PlacePickerGujarat
-                    value={{
-                        address: formData.location,
-                        latitude: formData.latitude,
-                        longitude: formData.longitude
-                    }}
-                    onChange={handleLocationChange}
-                />
-
-                {/* Display selected location info */}
-                {formData.latitude && formData.longitude && (
-                    <div className="p-3 bg-gray-100 rounded-lg text-sm text-gray-600">
-                        <p><strong>Selected Location:</strong> {formData.location}</p>
-                        <p><strong>Coordinates:</strong> {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}</p>
-                    </div>
-                )}
-            </div>
-        </StepWrapper>
-    );
-
-    const Step3_Service = () => (
-        <StepWrapper title="What Service Do You Need?">
-            <div className="grid grid-cols-2 gap-4">
-                {problems[formData.vehicleType]?.map(problem => (
-                    <SelectableCard
-                        key={problem.name}
-                        label={problem.name}
-                        emoji={problem.icon}
-                        isSelected={formData.problem === problem.name}
-                        onClick={() => setFormData({ ...formData, problem: problem.name })}
-                    />
-                ))}
-            </div>
-            <textarea
-                placeholder="Add any additional notes..."
-                value={formData.additionalNotes}
-                onChange={(e) => setFormData({ ...formData, additionalNotes: e.target.value })}
-                rows="3"
-                className="w-full mt-6 p-3 bg-gray-200 text-gray-700 rounded-xl shadow-[inset_2px_2px_5px_#BABECC,inset_-5px_-5px_10px_#FFFFFF] outline-none focus:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition resize-none"
-            />
-        </StepWrapper>
-    );
+    // The Step components are NO LONGER defined inside here
 
     return (
         <div className="min-h-screen bg-gray-300 text-gray-800 flex flex-col items-center justify-center p-4 font-sans">
@@ -186,9 +122,25 @@ export default function PunctureRequestFormRedesigned() {
 
                 <main className="mt-8 bg-gray-200 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] p-6 md:p-8 min-h-[450px]">
                     <AnimatePresence mode="wait">
-                        {step === 1 && <Step1_Vehicle />}
-                        {step === 2 && <Step2_Location />}
-                        {step === 3 && <Step3_Service />}
+                        {/* **FIX:** Pass state and handlers as props to the step components */}
+                        {step === 1 && (
+                            <Step1_Vehicle
+                                formData={formData}
+                                setFormData={setFormData}
+                            />
+                        )}
+                        {step === 2 && (
+                            <Step2_Location
+                                formData={formData}
+                                handleLocationChange={handleLocationChange}
+                            />
+                        )}
+                        {step === 3 && (
+                            <Step3_Service
+                                formData={formData}
+                                setFormData={setFormData}
+                            />
+                        )}
                     </AnimatePresence>
                 </main>
 
@@ -226,10 +178,81 @@ export default function PunctureRequestFormRedesigned() {
     );
 }
 
-// Keep all your existing helper components (StepWrapper, SelectableCard, ProgressStepper)
-// They remain exactly the same
 
-// Helper components with neumorphic design
+// --- STEP COMPONENTS ---
+// **FIX:** Moved outside the main component and now accept props
+
+const Step1_Vehicle = ({ formData, setFormData }) => (
+    <StepWrapper title="Select Your Vehicle">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {vehicleTypes.map(vehicle => (
+                <SelectableCard
+                    key={vehicle.id}
+                    label={vehicle.name}
+                    icon={vehicle.icon}
+                    isSelected={formData.vehicleType === vehicle.id}
+                    onClick={() => setFormData(prev => ({ ...prev, vehicleType: vehicle.id, problem: '' }))}
+                />
+            ))}
+        </div>
+    </StepWrapper>
+);
+
+const Step2_Location = ({ formData, handleLocationChange }) => (
+    <StepWrapper title="Confirm Your Location in Gujarat">
+        <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                    🗺️ <strong>Powered by MapMyIndia:</strong> Get accurate location search and addressing for Gujarat region
+                </p>
+            </div>
+
+            <PlacePickerGujarat
+                value={{
+                    address: formData.location,
+                    latitude: formData.latitude,
+                    longitude: formData.longitude
+                }}
+                onChange={handleLocationChange}
+            />
+
+            {formData.latitude && formData.longitude && (
+                <div className="p-3 bg-gray-100 rounded-lg text-sm text-gray-600">
+                    <p><strong>Selected Location:</strong> {formData.location}</p>
+                    <p><strong>Coordinates:</strong> {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}</p>
+                </div>
+            )}
+        </div>
+    </StepWrapper>
+);
+
+const Step3_Service = ({ formData, setFormData }) => (
+    <StepWrapper title="What Service Do You Need?">
+        <div className="grid grid-cols-2 gap-4">
+            {problems[formData.vehicleType]?.map(problem => (
+                <SelectableCard
+                    key={problem.name}
+                    label={problem.name}
+                    emoji={problem.icon}
+                    isSelected={formData.problem === problem.name}
+                    onClick={() => setFormData(prev => ({ ...prev, problem: problem.name }))}
+                />
+            ))}
+        </div>
+        <textarea
+            placeholder="Add any additional notes..."
+            value={formData.additionalNotes}
+            onChange={(e) => setFormData(prev => ({ ...prev, additionalNotes: e.target.value }))}
+            rows="3"
+            className="w-full mt-6 p-3 bg-gray-200 text-gray-700 rounded-xl shadow-[inset_2px_2px_5px_#BABECC,inset_-5px_-5px_10px_#FFFFFF] outline-none focus:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition resize-none"
+        />
+    </StepWrapper>
+);
+
+
+// --- HELPER COMPONENTS ---
+// (These were already correct)
+
 const StepWrapper = ({ title, children }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
