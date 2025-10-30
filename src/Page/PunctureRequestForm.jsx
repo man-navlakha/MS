@@ -1,5 +1,5 @@
 // PunctureRequestFormRedesigned.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // ✨ ADDED useEffect
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -48,19 +48,43 @@ const problems = {
     ],
 };
 
+// ✨ ADDED: Key for localStorage
+const FORM_STORAGE_KEY = 'punctureRequestFormData';
+
 
 // --- MAIN COMPONENT ---
 export default function PunctureRequestFormRedesigned() {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
-    const [formData, setFormData] = useState({
-        vehicleType: '',
-        location: '',
-        latitude: null,
-        longitude: null,
-        problem: '',
-        additionalNotes: ''
+
+    // ✨ MODIFIED: Initialize state from localStorage
+    const [formData, setFormData] = useState(() => {
+        const savedData = localStorage.getItem(FORM_STORAGE_KEY);
+        if (savedData) {
+            try {
+                // Parse the saved JSON data
+                return JSON.parse(savedData);
+            } catch (e) {
+                console.error("Failed to parse saved form data", e);
+                // If parsing fails, remove the bad data
+                localStorage.removeItem(FORM_STORAGE_KEY);
+            }
+        }
+        // Return default state if nothing is saved or parsing failed
+        return {
+            vehicleType: '',
+            location: '',
+            latitude: null,
+            longitude: null,
+            problem: '',
+            additionalNotes: ''
+        };
     });
+
+    // ✨ ADDED: useEffect to save data to localStorage on change
+    useEffect(() => {
+        localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+    }, [formData]); // This runs every time the formData state changes
 
     // Handler for location updates from PlacePickerGujarat
     const handleLocationChange = ({ address, latitude, longitude }) => {
@@ -73,7 +97,7 @@ export default function PunctureRequestFormRedesigned() {
     };
 
     const handleNext = () => step < 3 && setStep(step + 1);
-    const handlePrev = () => step > 1 && setStep(step - 1);
+    const handlePrev = () => step > 1 && setStep(step + 1);
 
     const handleSubmit = async () => {
         if (!formData.latitude || !formData.longitude) {
@@ -92,6 +116,7 @@ export default function PunctureRequestFormRedesigned() {
             });
 
             if (response.status === 201) {
+                // ✨ ADDED: Clear localStorage on successful submission
                 navigate(`/finding/${response.data.request_id}`);
             } else {
                 toast.error("Failed to submit request. Please try again.");
