@@ -37,8 +37,9 @@ export default function FindingMechanic() {
     }
   }, [socket, connectionStatus, request_id]);
 
- useEffect(() => {
-    if (!lastMessage || lastMessage.request_id?.toString() !== request_id) {
+  useEffect(() => {
+    // src/Page/FindingMechanic.jsx:54
+    if (!lastMessage || lastMessage.job_id?.toString() !== request_id) {
       // Ignore messages not for this request
       return;
     }
@@ -183,9 +184,9 @@ export default function FindingMechanic() {
                   onClick={() => setSelectedReason(reason)}
                   className={`w-full px-4 py-3 rounded-lg cursor-pointer transition-all duration-200
                              ${selectedReason === reason
-                               ? `text-red-600 font-semibold ${neumorphicInsetShadow}`
-                               : `text-gray-700 hover:text-blue-600 ${buttonShadow} active:shadow-none`
-                             }`}
+                      ? `text-red-600 font-semibold ${neumorphicInsetShadow}`
+                      : `text-gray-700 hover:text-blue-600 ${buttonShadow} active:shadow-none`
+                    }`}
                 >
                   {reason}
                 </div>
