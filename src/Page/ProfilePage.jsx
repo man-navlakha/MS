@@ -21,23 +21,41 @@ const EditableField = React.memo(({ label, name, value, onChange, type = "text" 
 ));
 
 // --- Reusable Order History Card Component ---
-const OrderHistoryCard = React.memo(({ order }) => (
-    <div className="bg-gray-200 p-4 rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF]">
-        <div className="flex justify-between items-start">
-            <div>
-                <p className="font-semibold text-gray-800">{order.problem}</p>
-                <p className="text-sm text-gray-500">{new Date(order.request_time).toLocaleString()}</p>
-                <p className="text-sm text-gray-600 mt-2">{order.location}</p>
+const OrderHistoryCard = React.memo(({ order }) => {
+    // UPDATED: Added a helper to handle new statuses from your API
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'COMPLETED':
+                return 'bg-green-200 text-green-800';
+            case 'ACCEPTED':
+                return 'bg-blue-200 text-blue-800';
+            case 'CANCELLED':
+                return 'bg-red-200 text-red-800';
+            case 'EXPIRED':
+                return 'bg-gray-300 text-gray-600';
+            default:
+                return 'bg-yellow-200 text-yellow-800'; // For 'PENDING' or other statuses
+        }
+    };
+
+    return (
+        <div className="bg-gray-200 p-4 rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF]">
+            <div className="flex justify-between items-start">
+                <div>
+                    <p className="font-semibold text-gray-800">{order.problem}</p>
+                    {/* CHANGED: Used 'created_at' instead of 'request_time' */}
+                    <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleString()}</p>
+                    <p className="text-sm text-gray-600 mt-2">{order.location}</p>
+                </div>
+                {/* UPDATED: Using the new status color logic */}
+                <div className={`text-sm font-semibold px-2 py-1 rounded-full ${getStatusColor(order.status)}`}>
+                    {order.status}
+                </div>
             </div>
-            <div className={`text-sm font-semibold px-2 py-1 rounded-full ${order.status === 'Completed' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                {order.status}
-            </div>
+            {/* REMOVED: Mechanic name section, as it's not in the new API response */}
         </div>
-        <div className="mt-4 pt-4 border-t border-gray-300">
-             <p className="text-sm text-gray-700">Mechanic: <span className="font-semibold">{order.mechanic_name}</span></p>
-        </div>
-    </div>
-));
+    );
+});
 
 
 const ProfilePage = () => {
@@ -116,7 +134,7 @@ const ProfilePage = () => {
         setEditedUser(prev => ({ ...prev, [name]: value }));
     }, []);
 
-    if (loading) {
+    if (loading || !user) {
         return <div className="min-h-screen bg-gray-300 flex items-center justify-center">Loading...</div>;
     }
 
@@ -130,7 +148,12 @@ const ProfilePage = () => {
                 {/* --- User Information Card --- */}
                 <div className="bg-gray-200 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] p-6 mb-8">
                     <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                        <FaUserCircle className="text-7xl text-gray-500" />
+                        {/* UPDATED: Show profile_pic from new API response */}
+                        {user.profile_pic ? (
+                            <img src={user.profile_pic} alt="Profile" className="w-20 h-20 rounded-full object-cover" />
+                        ) : (
+                            <FaUserCircle className="text-7xl text-gray-500" />
+                        )}
                         <div className="flex-grow text-center sm:text-left">
                             {isEditing ? (
                                 <div className="space-y-4">
@@ -147,6 +170,7 @@ const ProfilePage = () => {
                                         onChange={handleUserChange}
                                         type="email"
                                     />
+                                    {/* You can also add mobile_number here if you want it to be editable */}
                                 </div>
                             ) : (
                                 <>
@@ -154,7 +178,7 @@ const ProfilePage = () => {
                                     <p className="text-gray-600 flex items-center justify-center sm:justify-start">
                                         <FaEnvelope className="mr-2" />{user.email}
                                     </p>
-                                    <p className="text-gray-500 text-sm mt-1">Member since {new Date(user.date_joined).toLocaleDateString()}</p>
+                                    {/* REMOVED: "Member since" as 'date_joined' is not in the new API response */}
                                 </>
                             )}
                         </div>

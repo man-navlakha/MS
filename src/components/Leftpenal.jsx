@@ -52,6 +52,7 @@ export default function LeftPanel({ activeJob }) {
 
             {/* User Info */}
             <div className="flex items-center w-full gap-3 p-2 bg-gray-200 rounded-xl shadow-[inset_2px_2px_5px_#BABECC,inset_-5px_-5px_10px_#FFFFFF]">
+                {/* UPDATED: Show profile_pic from new API response */}
                 {user?.profile_pic ? (
                     <img src={user.profile_pic} alt="User Avatar" className="w-10 h-10 rounded-full" />
                 ) : (
@@ -95,7 +96,8 @@ export default function LeftPanel({ activeJob }) {
                         orderHistory.map(order => (
                             <div key={order.id} className="p-3 bg-gray-200 rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF]">
                                 <p className="font-semibold text-gray-700">{order.problem}</p>
-                                <p className="text-xs text-gray-500">{new Date(order.request_time).toLocaleDateString()}</p>
+                                {/* CHANGED: Used 'created_at' instead of 'request_time' */}
+                                <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
                             </div>
                         ))
                     ) : (

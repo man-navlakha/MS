@@ -18,7 +18,6 @@ import RequestLayout from './Page/RequestLayout';
 import FindingMechanic from './Page/FindingMechanic';
 import Protected from './ProtectedRoute';
 import { WebSocketProvider, useWebSocket } from './context/WebSocketContext';
-import MapplsAutosuggest from './components/MapplsAutosuggest';
 
 const GlobalSocketHandler = () => {
   const { lastMessage } = useWebSocket();
@@ -67,7 +66,6 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/verify" element={<OTP />} />
         <Route path="/logout" element={<Logout />} />
-        <Route path="/map" element={<MapplsAutosuggest />} />
 
         {/* All protected routes are nested here */}
         <Route
