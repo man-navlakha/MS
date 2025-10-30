@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { User, Clock, Phone, Wifi, WifiOff, X } from 'lucide-react';
+// ✨ ADDED MapPin and Wrench
+import { Car, Bike , Truck , Clock, Phone, Wifi, WifiOff, X, MapPin, Wrench, NotebookPen } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import AdBanner from '../components/AdBanner';
 import api from '../utils/api';
@@ -11,8 +12,57 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 const ACTIVE_JOB_STORAGE_KEY = 'activeJobData';
+// ✨ ADDED localStorage key for form data
+const FORM_STORAGE_KEY = 'punctureRequestFormData';
 
-// Reusable ConnectionStatus Component with Neumorphic Style
+
+// --- ✨ ADDED: Haversine distance calculation ---
+/**
+ * Calculates the great-circle distance between two points
+ * on the Earth (specified in decimal degrees).
+ */
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  var R = 6371; // Radius of the earth in km
+  var dLat = deg2rad(lat2 - lat1);
+  var dLon = deg2rad(lon2 - lon1);
+  var a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
+
+/**
+ * Calculates ETA in minutes based on distance and average speed.
+ */
+function calculateETA(userCoords, mechCoords) {
+  if (!userCoords || !mechCoords) {
+    return null;
+  }
+  const distance = getDistanceFromLatLonInKm(
+    userCoords.lat,
+    userCoords.lng,
+    mechCoords.lat,
+    mechCoords.lng
+  );
+  // Assume average speed of 30 km/h (0.5 km/min) in city traffic
+  const avgSpeedKmh = 30;
+  const timeHours = distance / avgSpeedKmh;
+  const timeMinutes = Math.round(timeHours * 60);
+
+  // Add a 5-minute buffer for starting off
+  return timeMinutes + 5;
+}
+// --- END: Haversine functions ---
+
+
+// Reusable ConnectionStatus Component (No changes)
 const ConnectionStatus = () => {
   const { connectionStatus } = useWebSocket();
   const neumorphicShadow = "shadow-[5px_5px_10px_#b8bec9,_-5px_-5px_10px_#ffffff]";
@@ -36,6 +86,7 @@ const ConnectionStatus = () => {
   );
 };
 
+
 export default function MechanicFound() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,7 +108,7 @@ export default function MechanicFound() {
       if (location.state.mechanic) {
         return {
           mechanic: location.state.mechanic,
-          jobDetails: null,
+          jobDetails: null, // This is fine, we get job details from form data
           request_id: location.state.requestId || paramRequestId,
         };
       }
@@ -73,6 +124,7 @@ export default function MechanicFound() {
 
     // 2. Fallback to localStorage (on page refresh)
     try {
+      // This key only stores MECHANIC data
       const savedJobData = JSON.parse(localStorage.getItem(ACTIVE_JOB_STORAGE_KEY));
       if (savedJobData && savedJobData.request_id === paramRequestId) {
         return savedJobData;
@@ -86,10 +138,21 @@ export default function MechanicFound() {
 
   const [initialState] = useState(getInitialState());
   const [mechanic, setMechanic] = useState(initialState.mechanic);
-  const [jobDetails] = useState(initialState.jobDetails);
-  const [estimatedTime, setEstimatedTime] = useState(initialState.estimatedTime || null);
-  const [mechanicLocation, setMechanicLocation] = useState(initialState.mechanic.current_latitude + "," + initialState.mechanic.current_latitude || null);
-  const [userLocation, setUserLocation] = useState("");
+  const [jobDetails] = useState(initialState.jobDetails); // This is for mechanic view, keep it.
+  
+  // ✨ ADDED: State for user's job request details
+  const [jobRequestDetails, setJobRequestDetails] = useState(null);
+  
+  // ✨ MODIFIED: States for user location, mechanic location, and ETA
+  const [estimatedTime, setEstimatedTime] = useState(null);
+  const [mechanicLocation, setMechanicLocation] = useState(() => {
+    // Set initial mechanic location from mechanic data
+    if (initialState.mechanic?.current_latitude && initialState.mechanic?.current_longitude) {
+      return { lat: initialState.mechanic.current_latitude, lng: initialState.mechanic.current_longitude };
+    }
+    return null;
+  });
+  const [userLocation, setUserLocation] = useState(null); // Will be { lat, lng }
 
   const [isCancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedReason, setSelectedReason] = useState('');
@@ -101,32 +164,54 @@ export default function MechanicFound() {
   const userMarkerRef = useRef(null);
   const mechanicMarkerRef = useRef(null);
 
-  const clearActiveJobData = () => localStorage.removeItem(ACTIVE_JOB_STORAGE_KEY);
+  const clearActiveJobData = () => {
+    localStorage.removeItem(ACTIVE_JOB_STORAGE_KEY);
+    // ✨ Also clear the form data, as the job is no longer active
+    localStorage.removeItem(FORM_STORAGE_KEY);
+  };
 
   // Persist state to localStorage whenever it changes
   useEffect(() => {
     if (mechanic && paramRequestId) {
-      const jobData = { mechanic, jobDetails, estimatedTime, mechanicLocation, request_id: paramRequestId };
+      // This just saves the mechanic/active job data
+      const jobData = { mechanic, jobDetails, request_id: paramRequestId };
       localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, JSON.stringify(jobData));
     }
-  }, [mechanic, jobDetails, estimatedTime, mechanicLocation, paramRequestId]);
+  }, [mechanic, jobDetails, paramRequestId]);
+  
 
-  // Handle WebSocket updates
+  // ✨ ADDED: Load job and user data from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedJobRequest = localStorage.getItem(FORM_STORAGE_KEY);
+      if (savedJobRequest) {
+        const data = JSON.parse(savedJobRequest);
+        setJobRequestDetails(data);
+        if (data.latitude && data.longitude) {
+          setUserLocation({ lat: data.latitude, lng: data.longitude });
+        }
+      } else {
+        toast.error("Could not load your job details.");
+      }
+    } catch (e) {
+      console.error("Failed to load job request data", e);
+      toast.error("Error reading job details.");
+    }
+  }, []); // Runs once on mount
+
+
   // Handle WebSocket updates
   useEffect(() => {
     if (!lastMessage) return;
 
-    // Handle location updates separately, as they are the most frequent.
+    // Handle location updates
     if (lastMessage.type === 'mechanic_location_update' && lastMessage.request_id?.toString() === paramRequestId) {
-
-      // --- ADD THIS LINE TO LOG THE LOCATION ---
       console.log(`[MechanicFound] Received location update for job ${paramRequestId}:`, {
         lat: lastMessage.latitude,
         lng: lastMessage.longitude
       });
-      // --- END OF ADDITION ---
-
       setMechanicLocation({ lat: lastMessage.latitude, lng: lastMessage.longitude });
+      // ETA will be recalculated by the other useEffect
       return; // Message handled
     }
 
@@ -137,9 +222,10 @@ export default function MechanicFound() {
     }
 
     switch (lastMessage.type) {
-      case 'eta_update':
-        setEstimatedTime(lastMessage.eta);
-        break;
+      // ✨ REMOVED 'eta_update' case, we calculate it now
+      // case 'eta_update':
+      //   setEstimatedTime(lastMessage.eta);
+      //   break;
       case 'job_completed':
       case 'job_cancelled':
       case 'job_cancelled_notification':
@@ -148,23 +234,39 @@ export default function MechanicFound() {
         navigate('/');
         break;
       case 'no_mechanic_found':
-        toast.success(lastMessage.message || "The request has been resolved.");
+        toast.error(lastMessage.message || "The mechanic could not be found.");
+        clearActiveJobData();
         navigate('/');
         break;
       default:
-        // You can add a log here to see if any other messages are being ignored
-        // console.log('[MechanicFound] Ignored message type:', lastMessage.type);
+        console.log('[MechanicFound] Ignored message type:', lastMessage.type);
         break;
     }
-  }, [lastMessage, navigate, paramRequestId]); // Make sure all dependencies are correct
+  }, [lastMessage, navigate, paramRequestId]);
+
+
+  // ✨ ADDED: Calculate ETA whenever user or mechanic location changes
+  useEffect(() => {
+    if (userLocation && mechanicLocation) {
+      const eta = calculateETA(userLocation, mechanicLocation);
+      setEstimatedTime(eta);
+    }
+  }, [userLocation, mechanicLocation]);
+
 
   // Initialize and update the map
   useEffect(() => {
-    if (!mapContainerRef.current || !mechanic) return;
+    // ✨ Wait for userLocation and mechanicLocation to be loaded
+    if (!mapContainerRef.current || !mechanic || !userLocation || !mechanicLocation) return;
+    
     if (!mapInstanceRef.current) {
       const map = new maplibregl.Map({
         container: mapContainerRef.current,
-        center: [mechanic.current_longitude, mechanic.current_latitude],
+        // ✨ Center between user and mechanic
+        center: [
+          (userLocation.lng + mechanicLocation.lng) / 2,
+          (userLocation.lat + mechanicLocation.lat) / 2
+        ],
         zoom: 13,
         style: `https://api.maptiler.com/maps/streets/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
       });
@@ -173,12 +275,14 @@ export default function MechanicFound() {
       map.on('load', () => {
         // User Marker
         const userEl = document.createElement('img');
-        userEl.src = '/ms.png';
+        userEl.src = '/ms.png'; // Assuming this is the user icon
         userEl.style.width = '35px';
         userEl.style.height = '35px';
         userEl.style.borderRadius = '50%';
         userEl.style.border = '3px solid #10b981';
-        userMarkerRef.current = new maplibregl.Marker(userEl).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
+        userMarkerRef.current = new maplibregl.Marker(userEl)
+          .setLngLat([userLocation.lng, userLocation.lat]) // ✨ Use userLocation state
+          .addTo(map);
 
         // Mechanic Marker
         const mechanicEl = document.createElement('img');
@@ -188,16 +292,26 @@ export default function MechanicFound() {
         mechanicEl.style.objectFit = 'cover';
         mechanicEl.style.borderRadius = '50%';
         mechanicEl.style.border = '3px solid #3b82f6';
-        mechanicMarkerRef.current = new maplibregl.Marker(mechanicEl).setLngLat([mechanic.current_longitude, mechanic.current_latitude]).addTo(map);
+        mechanicMarkerRef.current = new maplibregl.Marker(mechanicEl)
+          .setLngLat([mechanicLocation.lng, mechanicLocation.lat]) // ✨ Use mechanicLocation state
+          .addTo(map);
 
         fitMapToMarkers();
       });
     }
 
+    // Update mechanic marker position
     if (mechanicLocation && mechanicMarkerRef.current) {
       mechanicMarkerRef.current.setLngLat([mechanicLocation.lng, mechanicLocation.lat]);
       fitMapToMarkers();
     }
+    
+    // Update user marker position (though it shouldn't change)
+    if (userLocation && userMarkerRef.current) {
+      userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
+    }
+
+  // ✨ Add userLocation to dependency array
   }, [mechanic, mechanicLocation, userLocation]);
 
   const fitMapToMarkers = () => {
@@ -234,7 +348,6 @@ export default function MechanicFound() {
         cancellation_reason: `${username} - ${selectedReason}`,
       });
 
-      // ADD THIS BLOCK
       if (socket && socket.readyState === WebSocket.OPEN) {
         const cancelMessage = {
           type: 'cancel_request',
@@ -242,7 +355,6 @@ export default function MechanicFound() {
         };
         socket.send(JSON.stringify(cancelMessage));
       }
-      // END OF ADDED BLOCK
 
       clearActiveJobData();
       toast.success("Service request cancelled.");
@@ -273,7 +385,8 @@ export default function MechanicFound() {
           <div className={`${baseBg} rounded-b-3xl p-5 ${neumorphicShadow} flex items-center justify-between`}>
             <div>
               <h1 className="text-xl font-bold text-slate-800">
-                {estimatedTime ? `Arriving in ${estimatedTime} mins` : 'Calculating ETA...'}
+                {/* ✨ MODIFIED: Show calculated ETA */}
+                {estimatedTime ? `Arriving in ~${estimatedTime} mins` : 'Calculating ETA...'}
               </h1>
               <p className={`${secondaryTextColor} text-sm`}>Your mechanic is on the way</p>
             </div>
@@ -284,7 +397,7 @@ export default function MechanicFound() {
         </div>
 
         <div className="flex flex-col p-3 gap-5">
-          {/* Mechanic Info Card */}
+          {/* Mechanic Info Card (No changes) */}
           <div className={`${baseBg} rounded-3xl ${neumorphicShadow} p-5 flex items-center gap-4`}>
             <img
               src={mechanic.Mechanic_profile_pic || '/ms.png'}
@@ -303,15 +416,60 @@ export default function MechanicFound() {
             </button>
           </div>
 
+          {/* ✨ ADDED: Job Details Card ✨ */}
+          {jobRequestDetails && (
+            <div className={`${baseBg} rounded-3xl ${neumorphicShadow} p-5 flex flex-col gap-3`}>
+              <h3 className="text-lg font-bold text-slate-800">Your Request Details</h3>
+              
+              <div className="flex items-center gap-3">
+                <Wrench size={18} className={secondaryTextColor} />
+                <span className="font-medium">{jobRequestDetails.problem}</span>
+              </div>
+              
+             <div className="flex items-center gap-3">
+  {jobRequestDetails.vehicleType === "car" && (
+    <Car size={18} className={secondaryTextColor} />
+  )}
+  {jobRequestDetails.vehicleType === "bike" && (
+    <Bike size={18} className={secondaryTextColor} />
+  )}
+  {jobRequestDetails.vehicleType === "truck" && (
+    <Truck size={18} className={secondaryTextColor} />
+  )}
+  <span className="font-medium capitalize">
+    {jobRequestDetails.vehicleType}
+  </span>
+</div>
+
+              {jobRequestDetails.additionalNotes && 
+              <div className="flex items-start gap-3">
+                <NotebookPen size={18} className={`${secondaryTextColor} mt-1 flex-shrink-0`} />
+                <span className="text-sm">{jobRequestDetails.additionalNotes}</span>
+              </div>
+              }
+
+              <div className="flex items-start gap-3">
+                <MapPin size={18} className={`${secondaryTextColor} mt-1 flex-shrink-0`} />
+                <span className="text-sm">{jobRequestDetails.location}</span>
+              </div>
+            </div>
+          )}
+
           {/* Map Container */}
           <div className={`rounded-3xl p-2 ${neumorphicInsetShadow}`}>
             <div ref={mapContainerRef} className="w-full h-80 rounded-2xl" />
           </div>
 
-          <AdBanner />
+          {/* ✨ ADDED: Job Details Card ✨ */}
+          {jobRequestDetails && (
+            <div className={`${baseBg} rounded-3xl ${neumorphicShadow} p-5 flex flex-col gap-3`}>
+              <AdBanner />
+            </div>
+          )}
+          
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-4 mt-2">
+          <div className="flex flex-col mb-32 gap-4 mt-2">
             <button
               onClick={() => setCancelModalOpen(true)}
               className={`${baseBg} w-full py-4 rounded-xl font-semibold text-red-600 transition-all duration-200 ${neumorphicShadow} ${buttonActiveShadow} flex items-center justify-center gap-2`}
@@ -323,7 +481,7 @@ export default function MechanicFound() {
         </div>
       </div>
 
-      {/* Cancellation Modal */}
+      {/* Cancellation Modal (No changes) */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 bg-slate-200 bg-opacity-25 z-50 flex items-center justify-center p-4">
           <div className={`${baseBg} w-full max-w-md p-6 rounded-3xl ${neumorphicShadow}`}>
