@@ -47,7 +47,7 @@ export const WebSocketProvider = ({ children }) => {
 
         ws.current.onmessage = (event) => {
           const data = JSON.parse(event.data);
-          console.log('%c[WS-PROVIDER] ==> Message Received:', 'color: #00008B; font-weight: bold;', data);
+          console.log('%c[WS-PROVIDER] ==> Message Received:', 'color: #d3d3d3ff; font-weight: bold;', data);
           setLastMessage(data);
         };
 

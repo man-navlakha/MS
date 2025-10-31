@@ -35,7 +35,7 @@ useEffect(() => {
         }
       } catch (error) {
         console.error("Could not parse job data from localStorage.", error);
-        localStorage.removeItem('activeJobData');
+      
       }
 
       if (jobIdFromStorage) {
@@ -46,7 +46,7 @@ useEffect(() => {
 
           if (data && data.message === 'No active job found.') {
             console.log("Server confirms no active job. Clearing stale data.");
-            localStorage.removeItem('activeJobData');
+  
             setActiveJob(null);
             return;
           }
@@ -71,8 +71,6 @@ useEffect(() => {
               estimatedTime: null
             };
             
-            localStorage.setItem('activeJobData', JSON.stringify(jobDataToStore));
-
             navigate(`/mechanic-found/${jobIdFromStorage}`, { // Use the ID from localStorage
               state: { mechanic: data, requestId: jobIdFromStorage }
             });

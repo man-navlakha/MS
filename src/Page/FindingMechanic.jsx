@@ -5,6 +5,7 @@ import { Clock, Loader, X } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import OrderDetailsCard from '../components/OrderDetailsCard';
 
 export default function FindingMechanic() {
   const { request_id } = useParams();
@@ -46,22 +47,41 @@ export default function FindingMechanic() {
 
     switch (lastMessage.type) {
       case 'mechanic_accepted':
-        // Navigate to MechanicFound page
-        console.log(lastMessage)
-        navigate(`/mechanic-found/${request_id}/`, {
-          state: {
-            mechanic: lastMessage.mechanic_details,
-            estimatedTime: lastMessage.estimated_arrival_time,
-            requestId: request_id
-          }
-        });
-        break;
+    // Save mechanic details into localStorage
+    try {
+      const mechanicData = {
+        type: lastMessage.type,
+        job_id: lastMessage.job_id,
+        mechanic_details: lastMessage.mechanic_details,
+        request_id, // optionally include the current request_id
+        estimated_arrival_time: lastMessage.estimated_arrival_time || null,
+        timestamp: new Date().toISOString()
+      };
+
+      localStorage.setItem('mechanicAcceptedData', JSON.stringify(mechanicData));
+
+      console.log('✅ Mechanic Accepted data saved:', mechanicData);
+    } catch (error) {
+      console.error('❌ Error saving mechanic data to localStorage:', error);
+    }
+
+    // Navigate to MechanicFound page
+    navigate(`/mechanic-found/${request_id}/`, {
+      state: {
+        mechanic: lastMessage.mechanic_details,
+        estimatedTime: lastMessage.estimated_arrival_time,
+        requestId: request_id
+      }
+    });
+    break;
+
 
       // ✨ ADD THIS CASE ✨
       case 'no_mechanic_found':
         toast.error(lastMessage.message || 'We could not find an available mechanic.');
         // Optionally clear any local state related to the search if needed
-        localStorage.removeItem('activeJobData'); // Clear potentially stale data just in case
+        localStorage.removeItem('activeJobData'); 
+        localStorage.removeItem('punctureRequestFormData'); 
         navigate('/'); // Navigate back home or to a relevant page
         break;
       // END OF ADDITION
@@ -151,8 +171,8 @@ export default function FindingMechanic() {
             </div>
             <div className="text-center text-gray-400 text-sm">
               <p>Request ID: #{request_id}</p>
-              {/* <p className="mt-1">WebSocket: <span className="font-medium text-gray-500">{connectionStatus}</span></p> */}
             </div>
+            <OrderDetailsCard />
           </div>
 
           <div className="flex gap-4">
