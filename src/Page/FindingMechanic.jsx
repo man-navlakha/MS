@@ -151,7 +151,7 @@ export default function FindingMechanic() {
             </div>
             <div className="text-center text-gray-400 text-sm">
               <p>Request ID: #{request_id}</p>
-              <p className="mt-1">WebSocket: <span className="font-medium text-gray-500">{connectionStatus}</span></p>
+              {/* <p className="mt-1">WebSocket: <span className="font-medium text-gray-500">{connectionStatus}</span></p> */}
             </div>
           </div>
 

@@ -18,6 +18,7 @@ import {
 import api from '../utils/api';
 import { toast } from 'react-hot-toast';
 import PlacePickerGujarat from '../components/PlacePickerGujarat'; // Import the updated component
+import Navbar from '../components/Navbar';
 
 // --- CONSTANTS ---
 // Moved outside the component so they are not re-declared on render
@@ -97,7 +98,7 @@ export default function PunctureRequestFormRedesigned() {
     };
 
     const handleNext = () => step < 3 && setStep(step + 1);
-    const handlePrev = () => step > 1 && setStep(step + 1);
+    const handlePrev = () => step > 1 && setStep(step - 1);
 
     const handleSubmit = async () => {
         if (!formData.latitude || !formData.longitude) {
@@ -137,15 +138,16 @@ export default function PunctureRequestFormRedesigned() {
 
     return (
         <div className="min-h-screen bg-gray-300 text-gray-800 flex flex-col items-center justify-center p-4 font-sans">
-            <div className="w-full max-w-2xl">
-                <header className="text-center mb-8">
-                    <h1 className="text-4xl font-bold tracking-tight">Roadside Assistance</h1>
+        <Navbar />
+            <div className="w-full max-w-2xl my-18">
+                <header className="text-center mb-2">
+                    <h1 className="text-3xl font-bold tracking-tight">Roadside Assistance</h1>
                     <p className="text-gray-600 mt-2">Get back on the road in minutes.</p>
                 </header>
 
                 <ProgressStepper currentStep={step} />
 
-                <main className="mt-8 bg-gray-200 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] p-6 md:p-8 min-h-[450px]">
+                <main className="mt-4 bg-gray-200 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] p-6 md:p-8 min-h-[450px]">
                     <AnimatePresence mode="wait">
                         {/* **FIX:** Pass state and handlers as props to the step components */}
                         {step === 1 && (
@@ -209,7 +211,7 @@ export default function PunctureRequestFormRedesigned() {
 
 const Step1_Vehicle = ({ formData, setFormData }) => (
     <StepWrapper title="Select Your Vehicle">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             {vehicleTypes.map(vehicle => (
                 <SelectableCard
                     key={vehicle.id}
@@ -226,11 +228,7 @@ const Step1_Vehicle = ({ formData, setFormData }) => (
 const Step2_Location = ({ formData, handleLocationChange }) => (
     <StepWrapper title="Confirm Your Location in Gujarat">
         <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                    🗺️ <strong>Powered by MapMyIndia:</strong> Get accurate location search and addressing for Gujarat region
-                </p>
-            </div>
+        
 
             <PlacePickerGujarat
                 value={{

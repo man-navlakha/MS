@@ -2,9 +2,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
     FaUserCircle, FaEnvelope, FaEdit, FaSave,
-    FaTimes, FaSignOutAlt
+    FaTimes, FaSignOutAlt, FaPhoneSquareAlt
 } from 'react-icons/fa';
 import api from '../utils/api';
+import { CheckCircle, XCircle, Clock, Car, Bike, Truck, Bus } from 'lucide-react';
+import Navbar from '../components/Navbar';
 
 // --- Reusable Editable Field Component ---
 const EditableField = React.memo(({ label, name, value, onChange, type = "text" }) => (
@@ -20,44 +22,123 @@ const EditableField = React.memo(({ label, name, value, onChange, type = "text" 
     </div>
 ));
 
-// --- Reusable Order History Card Component ---
-const OrderHistoryCard = React.memo(({ order }) => {
-    // UPDATED: Added a helper to handle new statuses from your API
+
+const OrderHistoryCard = React.memo(({ order, onBookAgain }) => {
     const getStatusColor = (status) => {
         switch (status) {
-            case 'COMPLETED':
-                return 'bg-green-200 text-green-800';
-            case 'ACCEPTED':
-                return 'bg-blue-200 text-blue-800';
-            case 'CANCELLED':
-                return 'bg-red-200 text-red-800';
-            case 'EXPIRED':
-                return 'bg-gray-300 text-gray-600';
+            case "COMPLETED":
+                return "text-green-600";
+            case "CANCELLED":
+                return "text-red-600";
+            case "EXPIRED":
+                return "text-gray-600";
             default:
-                return 'bg-yellow-200 text-yellow-800'; // For 'PENDING' or other statuses
+                return "text-yellow-600";
         }
     };
 
+
+    const getVehicleIcon = (type) => {
+        switch (type) {
+            case "bike":
+                return <Bike className="w-10 h-10 text-gray-700" />;
+            case "car":
+                return <Car className="w-10 h-10 text-gray-700" />;
+            case "truck":
+                return <Truck className="w-10 h-10 text-gray-700" />;
+            case "bus":
+                return <Bus className="w-10 h-10 text-gray-700" />;
+            default:
+                return <Car className="w-10 h-10 text-gray-700" />;
+        }
+    };
+
+    const formattedDate = new Date(order.created_at).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+
     return (
-        <div className="bg-gray-200 p-4 rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF]">
-            <div className="flex justify-between items-start">
-                <div>
-                    <p className="font-semibold text-gray-800">{order.problem}</p>
-                    {/* CHANGED: Used 'created_at' instead of 'request_time' */}
-                    <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleString()}</p>
-                    <p className="text-sm text-gray-600 mt-2">{order.location}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-4">
+            {/* Top Section */}
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    {getVehicleIcon(order.vehical_type)}
+                    <div>
+                        <p className="font-semibold text-gray-800">{order.problem}</p>
+                        <p className="text-sm text-gray-500">{formattedDate}</p>
+                    </div>
                 </div>
-                {/* UPDATED: Using the new status color logic */}
-                <div className={`text-sm font-semibold px-2 py-1 rounded-full ${getStatusColor(order.status)}`}>
-                    {order.status}
+
+                {order.price && (
+                    <p className="text-lg font-semibold text-gray-800">₹{order.price}</p>
+                )}
+            </div>
+
+            {/* Middle Section - Location / Info */}
+            <div className="bg-gray-50 rounded-lg p-3 mt-4">
+                <div className="flex flex-col">
+                    <div className="flex items-start">
+                        <div className="flex flex-col items-center mr-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            <div className="h-6 w-[2px] bg-gray-300"></div>
+                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <div>
+                                <p className="font-semibold text-gray-800">Pickup</p>
+                                <p className="text-sm text-gray-600">{order.location}</p>
+                            </div>
+                            {order.additional_details && (
+                                <div>
+                                    <p className="font-semibold text-gray-800">Details</p>
+                                    <p className="text-sm text-gray-600 italic">{order.additional_details}</p>
+                                </div>
+                            )}
+                            {order.cancellation_reason && (
+                                <div>
+                                    <p className="font-semibold text-red-700">Reason</p>
+                                    <p className="text-sm text-red-600">{order.cancellation_reason}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
-            {/* REMOVED: Mechanic name section, as it's not in the new API response */}
+
+            {/* Bottom Section - Status + Button */}
+            <div className="flex justify-between items-center mt-4">
+                <div className="flex items-center gap-1">
+                    {order.status === "COMPLETED" && (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                    )}
+                    {order.status === "CANCELLED" && (
+                        <XCircle className="w-4 h-4 text-red-600" />
+                    )}
+                    {order.status === "EXPIRED" && (
+                        <Clock className="w-4 h-4 text-gray-600" />
+                    )}
+                    <p className={`font-medium ${getStatusColor(order.status)}`}>
+                        {order.status.charAt(0) + order.status.slice(1).toLowerCase()}
+                    </p>
+                </div>
+
+                {/* {order.status === "COMPLETED" && (
+          <button
+            onClick={() => onBookAgain && onBookAgain(order)}
+            className="bg-blue-600 text-white px-4 py-1 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+          >
+            Book Again
+          </button>
+        )} */}
+            </div>
         </div>
     );
 });
-
-
 const ProfilePage = () => {
     const [user, setUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -141,6 +222,7 @@ const ProfilePage = () => {
 
     return (
         <div className="min-h-screen bg-gray-300 text-gray-700 p-4 sm:p-6 lg:p-8">
+            <Navbar />
             <div className="max-w-4xl mx-auto">
 
                 <h1 className="text-3xl font-bold mb-8 text-gray-800">My Profile</h1>
@@ -178,6 +260,9 @@ const ProfilePage = () => {
                                     <p className="text-gray-600 flex items-center justify-center sm:justify-start">
                                         <FaEnvelope className="mr-2" />{user.email}
                                     </p>
+                                    <p className="text-gray-600 flex items-center justify-center sm:justify-start">
+                                        <FaPhoneSquareAlt className="mr-2" />{user.mobile_number}
+                                    </p>
                                     {/* REMOVED: "Member since" as 'date_joined' is not in the new API response */}
                                 </>
                             )}
@@ -186,29 +271,36 @@ const ProfilePage = () => {
                             <div className="flex space-x-2 self-start sm:self-auto">
                                 <button
                                     onClick={handleSave}
-                                    className="p-3 bg-green-400 rounded-full shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition"
+                                    className="p-3 bg-green-400 flex items-center gap-2 text-white rounded-full shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition"
                                     aria-label="Save changes"
                                 >
-                                    <FaSave className="text-white" />
-                                </button>
+                                    <FaSave className="text-white" /> Save
+                                </button> 
                                 <button
                                     onClick={handleCancel}
-                                    className="p-3 bg-red-400 rounded-full shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition"
+                                    className="p-3 bg-red-400 flex items-center gap-2 text-white rounded-full shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition"
                                     aria-label="Cancel changes"
                                 >
-                                    <FaTimes className="text-white" />
+                                    <FaTimes className="text-white" /> Close
                                 </button>
                             </div>
                         ) : (
                             <button
                                 onClick={handleEdit}
-                                className="p-3 bg-gray-300 rounded-full shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition self-start sm:self-auto"
+                                className="p-3 bg-gray-300 flex items-center gap-2 text-black rounded-full shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition self-start sm:self-auto"
                                 aria-label="Edit profile"
                             >
-                                <FaEdit className="text-gray-600" />
+                                <FaEdit className="text-gray-600" /> Edit
                             </button>
                         )}
                     </div>
+                </div>
+
+                {/* --- Account Actions Card --- */}
+                <div className="bg-gray-200 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] p-6 mb-6 flex flex-col justify-center">
+                    <button className="w-full flex items-center justify-center p-3 bg-red-400 text-white rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition font-bold">
+                        <FaSignOutAlt className="mr-3" /> Logout
+                    </button>
                 </div>
 
                 {/* --- Order History Card --- */}
@@ -225,12 +317,7 @@ const ProfilePage = () => {
                     </div>
                 </div>
 
-                {/* --- Account Actions Card --- */}
-                <div className="bg-gray-200 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] p-6 flex flex-col justify-center">
-                    <button className="w-full flex items-center justify-center p-3 bg-red-400 text-white rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition font-bold">
-                        <FaSignOutAlt className="mr-3" /> Logout
-                    </button>
-                </div>
+
             </div>
         </div>
     );

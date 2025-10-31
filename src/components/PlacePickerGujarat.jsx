@@ -266,15 +266,6 @@ const PlacePickerGujarat = ({ value = {}, onChange }) => {
             </>
           )}
         </button>
-
-        <button
-          type="button"
-          onClick={() => updatePosition(23.0225, 72.5714, 'Ahmedabad, Gujarat, India')}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-500 text-white rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] font-semibold hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition"
-        >
-          <Navigation className="h-4 w-4" />
-          Ahmedabad
-        </button>
       </div>
     </div>
   );
