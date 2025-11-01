@@ -32,12 +32,8 @@ export default function Navbar() {
   }, []);
 
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsAuthenticated(false); // Update state immediately
-    // Optional: Dispatch a custom event to notify other components like this one
-    window.dispatchEvent(new Event('authChange'));
-    navigate("/login");
+ const handleLogout = () => {
+    navigate("/logout");
   };
 
   // Use Tailwind classes for active links for consistency

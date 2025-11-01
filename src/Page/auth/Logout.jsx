@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { toast } from 'react-hot-toast';
 
 const Logout = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const Logout = () => {
         await api.post('/users/logout/', {}, { withCredentials: true }); // include cookies
       } catch (err) {
         console.error('Logout failed:', err);
+        toast.error("Logout failed")
         // Even if server fails, proceed to client-side cleanup
       } finally {
         // Clear any client-side auth state/storage
@@ -26,4 +28,3 @@ const Logout = () => {
 };
 
 export default Logout;
-  

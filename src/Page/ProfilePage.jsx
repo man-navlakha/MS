@@ -4,6 +4,7 @@ import {
     FaUserCircle, FaEnvelope, FaEdit, FaSave,
     FaTimes, FaSignOutAlt, FaPhoneSquareAlt
 } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { CheckCircle, XCircle, Clock, Car, Bike, Truck, Bus } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -145,6 +146,7 @@ const ProfilePage = () => {
     const [editedUser, setEditedUser] = useState(null);
     const [orderHistory, setOrderHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate(); // ✅ 2. Initialize navigate
 
 
     useEffect(() => {
@@ -214,6 +216,10 @@ const ProfilePage = () => {
         const { name, value } = e.target;
         setEditedUser(prev => ({ ...prev, [name]: value }));
     }, []);
+
+    const handleLogout = () => {
+      navigate("/logout");
+    };
 
     if (loading || !user) {
         return <div className="min-h-screen bg-gray-300 flex items-center justify-center">Loading...</div>;
@@ -298,7 +304,10 @@ const ProfilePage = () => {
 
                 {/* --- Account Actions Card --- */}
                 <div className="bg-gray-200 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] p-6 mb-6 flex flex-col justify-center">
-                    <button className="w-full flex items-center justify-center p-3 bg-red-400 text-white rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition font-bold">
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full flex items-center justify-center p-3 bg-red-400 text-white rounded-xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition font-bold"
+                    >
                         <FaSignOutAlt className="mr-3" /> Logout
                     </button>
                 </div>

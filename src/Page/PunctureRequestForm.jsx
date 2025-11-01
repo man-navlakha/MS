@@ -117,6 +117,9 @@ export default function PunctureRequestFormRedesigned() {
             });
 
             if (response.status === 201) {
+                toast('Sended Request!', {
+  icon: '👍',
+});
                 // ✨ ADDED: Clear localStorage on successful submission
                 navigate(`/finding/${response.data.request_id}`);
             } else {

@@ -18,28 +18,28 @@ export default function FindingMechanic() {
   const [username, setUsername] = useState('User');
 
   const timerRef = useRef(null);
-const ConnectionStatus = () => {
-  const { connectionStatus } = useWebSocket();
-  const neumorphicShadow = "shadow-[5px_5px_10px_#b8bec9,_-5px_-5px_10px_#ffffff]";
+  const ConnectionStatus = () => {
+    const { connectionStatus } = useWebSocket();
+    const neumorphicShadow = "shadow-[5px_5px_10px_#b8bec9,_-5px_-5px_10px_#ffffff]";
 
-  let statusContent;
-  switch (connectionStatus) {
-    case 'connected':
-      statusContent = <div className="flex items-center text-green-600"><Wifi size={16} className="mr-2" /><span>Connected</span></div>;
-      break;
-    case 'connecting':
-      statusContent = <div className="flex items-center text-yellow-600"><Clock size={16} className="mr-2 animate-spin" /><span>Connecting...</span></div>;
-      break;
-    default:
-      statusContent = <div className="flex items-center text-red-600"><WifiOff size={16} className="mr-2" /><span>Disconnected</span></div>;
-  }
+    let statusContent;
+    switch (connectionStatus) {
+      case 'connected':
+        statusContent = <div className="flex items-center text-green-600"><Wifi size={16} className="mr-2" /><span>Connected</span></div>;
+        break;
+      case 'connecting':
+        statusContent = <div className="flex items-center text-yellow-600"><Clock size={16} className="mr-2 animate-spin" /><span>Connecting...</span></div>;
+        break;
+      default:
+        statusContent = <div className="flex items-center text-red-600"><WifiOff size={16} className="mr-2" /><span>Disconnected</span></div>;
+    }
 
-  return (
-    <div className={`fixed bottom-4 right-4 bg-slate-200 px-4 py-2 rounded-full text-sm font-semibold z-20 ${neumorphicShadow}`}>
-      {statusContent}
-    </div>
-  );
-};
+    return (
+      <div className={`fixed bottom-4 right-4 bg-slate-200 px-4 py-2 rounded-full text-sm font-semibold z-20 ${neumorphicShadow}`}>
+        {statusContent}
+      </div>
+    );
+  };
   // Timer effect
   useEffect(() => {
     timerRef.current = setInterval(() => {
@@ -68,41 +68,42 @@ const ConnectionStatus = () => {
 
     switch (lastMessage.type) {
       case 'mechanic_accepted':
-    // Save mechanic details into localStorage
-    try {
-      const mechanicData = {
-        type: lastMessage.type,
-        job_id: lastMessage.job_id,
-        mechanic_details: lastMessage.mechanic_details,
-        request_id, // optionally include the current request_id
-        estimated_arrival_time: lastMessage.estimated_arrival_time || null,
-        timestamp: new Date().toISOString()
-      };
+        // Save mechanic details into localStorage
+        try {
+          const mechanicData = {
+            type: lastMessage.type,
+            job_id: lastMessage.job_id,
+            mechanic_details: lastMessage.mechanic_details,
+            request_id, // optionally include the current request_id
+            estimated_arrival_time: lastMessage.estimated_arrival_time || null,
+            timestamp: new Date().toISOString()
+          };
 
-      localStorage.setItem('mechanicAcceptedData', JSON.stringify(mechanicData));
+          localStorage.setItem('mechanicAcceptedData', JSON.stringify(mechanicData));
 
-      console.log('✅ Mechanic Accepted data saved:', mechanicData);
-    } catch (error) {
-      console.error('❌ Error saving mechanic data to localStorage:', error);
-    }
+           toast.success(`Mechanic assigned! Arriving in ${lastMessage.estimated_arrival_time || 'a few minutes'} 🚗`);
+        } catch (error) {
+          console.error('❌ Error saving mechanic data to localStorage:', error);
+        }
 
-    // Navigate to MechanicFound page
-    navigate(`/mechanic-found/${request_id}/`, {
-      state: {
-        mechanic: lastMessage.mechanic_details,
-        estimatedTime: lastMessage.estimated_arrival_time,
-        requestId: request_id
-      }
-    });
-    break;
+        // Navigate to MechanicFound page
+
+        navigate(`/mechanic-found/${request_id}/`, {
+          state: {
+            mechanic: lastMessage.mechanic_details,
+            estimatedTime: lastMessage.estimated_arrival_time,
+            requestId: request_id
+          }
+        });
+        break;
 
 
       // ✨ ADD THIS CASE ✨
       case 'no_mechanic_found':
         toast.error(lastMessage.message || 'We could not find an available mechanic.');
         // Optionally clear any local state related to the search if needed
-        localStorage.removeItem('activeJobData'); 
-        localStorage.removeItem('punctureRequestFormData'); 
+        localStorage.removeItem('activeJobData');
+        localStorage.removeItem('punctureRequestFormData');
         navigate('/'); // Navigate back home or to a relevant page
         break;
       // END OF ADDITION
@@ -165,7 +166,7 @@ const ConnectionStatus = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-700 flex flex-col items-center justify-center p-4 font-sans">
-       <ConnectionStatus />
+      <ConnectionStatus />
       <div className="w-full max-w-md">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}

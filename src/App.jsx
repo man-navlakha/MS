@@ -60,7 +60,7 @@ export default function App() {
   const activeJob = localStorage.getItem("activeJobData")
   return (
     <div className="App transition-all duration-500 ease-in-out bg-white">
-      <Toaster position="top-center" reverseOrder={false} />
+      <Toaster position="top-right" reverseOrder={false} />
 {localStorage.getItem("activeJobData") && <a href={`/mechanic-found/${activeJob.request_id}`}> <div className='bg-blue-600 text-white font-bold min-w-screen w-full p-3' >Your active Order {activeJob.request_id}</div></a>}
       <Routes>
         {/* Public routes */}

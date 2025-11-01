@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaUser, FaPhone, FaEnvelope } from "react-icons/fa";
 import api from "../../utils/api";
+import { toast } from 'react-hot-toast';
 
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
@@ -22,6 +23,7 @@ const ProcessForm = () => {
   // --- FORM NAVIGATION ---
   const nextStep = () => {
     if (validateCurrentStep()) {
+      toast.success("Data saved 👍")
       setStep(step + 1);
     }
   };
@@ -53,34 +55,36 @@ const ProcessForm = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      // Build payload conditionally
-      const payload = {
-        first_name: status === "Google" ? null : formData.firstName,
-        last_name: status === "Google" ? null : formData.lastName,
-        mobile_number: formData.phone,
-        profile_pic: status === "Google" ? null : "https://mphkxojdifbgafp1.public.blob.vercel-storage.com/Profile/profile-pic%20%287%29.png"
-      };
-
-      // POST to backend
-      const res = await api.post("/users/SetUsersDetail/", payload); // adjust path if trailing slash required
-      console.log("Saved user details:", res.data);
-
-      // Move to the success/thank you step
-      setStep((s) => s + 1);
-
-      // Redirect to home page after 2 seconds
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
-    } catch (err) {
-      console.error("Save failed:", err);
-      // Surface a basic error in UI; optionally map server errors to fields
-      setErrors((prev) => ({ ...prev, submit: "Failed to save details. Try again." }));
-    }
+  // Build payload conditionally
+  const payload = {
+    first_name: status === "Google" ? null : formData.firstName,
+    last_name: status === "Google" ? null : formData.lastName,
+    mobile_number: formData.phone,
+    profile_pic: status === "Google" ? null : null
   };
+
+  // Wrap the API call in toast.promise
+  await toast.promise(
+    api.post("/users/SetUsersDetail/", payload),
+    {
+      loading: 'Submitting your details...',
+      success: <b>Details submitted successfully 🎉</b>,
+      error: <b>Failed to save details. Try again.</b>,
+    }
+  ).then((res) => {
+    console.log("Saved user details:", res.data);
+    setStep((s) => s + 1);
+    setTimeout(() => {
+      navigate("/");
+    }, 2000);
+  }).catch((err) => {
+    console.error("Save failed:", err);
+    setErrors((prev) => ({ ...prev, submit: "Failed to save details. Try again." }));
+  });
+};
+
 
   // --- PROGRESS BAR COMPONENT ---
   const ProgressBar = ({ currentStep }) => {
